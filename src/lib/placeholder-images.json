@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "card-back",
+      "description": "A decorative pattern for the back of a playing card.",
+      "imageUrl": "https://images.unsplash.com/photo-1709540244087-ae4c96f270aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjYXJkJTIwYmFjayUyMHBhdHRlcm58ZW58MHx8fHwxNzYxNjAzMTI2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "card back pattern"
+    }
+  ]
 }
