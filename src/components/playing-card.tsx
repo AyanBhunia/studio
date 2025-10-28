@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Card, Suit } from "@/lib/types";
@@ -76,19 +77,19 @@ export function PlayingCard({
       )}
       aria-label={`Card ${card.rank} of ${card.suit}. ${isPossibleMove ? "Possible move." : ""}`}
     >
-      <div className="absolute left-2 top-1 text-left font-bold">
-        <div className="text-xl leading-none">{card.rank}</div>
-        <SuitIcon className="h-4 w-4" />
+      <div className="absolute left-1 top-0 p-1 text-left font-bold sm:left-2 sm:top-1">
+        <div className="text-base leading-none sm:text-xl">{card.rank}</div>
+        <SuitIcon className="h-3 w-3 sm:h-4 sm:w-4" />
       </div>
-      <div className="absolute right-2 bottom-1 rotate-180 text-left font-bold">
-        <div className="text-xl leading-none">{card.rank}</div>
-        <SuitIcon className="h-4 w-4" />
+      <div className="absolute bottom-0 right-1 rotate-180 p-1 text-left font-bold sm:bottom-1 sm:right-2">
+        <div className="text-base leading-none sm:text-xl">{card.rank}</div>
+        <SuitIcon className="h-3 w-3 sm:h-4 sm:w-4" />
       </div>
 
       <div className="flex h-full w-full items-center justify-center">
         <SuitIcon
           className={cn(
-            "h-1/3 w-1/3 opacity-50",
+            "h-1/4 w-1/4 opacity-50 sm:h-1/3 sm:w-1/3",
             isKingHere && "opacity-10"
           )}
         />
