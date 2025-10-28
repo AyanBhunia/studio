@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { generateGrid, getPossibleMoves } from "@/lib/game";
+import { generateGrid, getPossibleMoves, getCardDistribution } from "@/lib/game";
+import { CardDistribution } from "./card-distribution";
 import type { Grid, Player, PlayerPosition } from "@/lib/types";
 import { PlayingCard } from "./playing-card";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,21 @@ interface GameBoardProps {
   setActivePlayer: (player: Player | null) => void;
   setWinner: (player: Player | null) => void;
   setGameState: (gameState: "loading" | "playing" | "gameOver") => void;
-  setCpuThought?: (text: string) => void;
-  setDebugInfo?: (text: string) => void;
+  cpuAutoPlay: boolean;
+}
+
+import { MoveHistory } from "./move-history";
+
+interface Move {
+  playerId: number;
+  from: {
+    value: number;
+    suit: Suit;
+  };
+  to: {
+    value: number;
+    suit: Suit;
+  };
 }
 
 export function GameBoard({ 
@@ -31,11 +45,12 @@ export function GameBoard({
   setActivePlayer: setActivePlayerProp,
   setWinner: setWinnerProp,
   setGameState: setGameStateProp,
-  setCpuThought,
-  setDebugInfo,
+  cpuAutoPlay,
 }: GameBoardProps) {
   const [grid, setGrid] = useState<Grid | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [distribution, setDistribution] = useState<CardCount[]>([]);
+  const [moveHistory, setMoveHistory] = useState<Move[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState(0);
   const [possibleMoves, setPossibleMoves] = useState<PlayerPosition[]>([]);
   const [gameState, setGameState] = useState<"loading" | "playing" | "gameOver">("loading");
@@ -47,7 +62,6 @@ export function GameBoard({
 
   useEffect(() => {
     setPlayersProp(players);
-    setDebugInfo?.(`players:${players.length} current:${currentPlayerId}`);
   }, [players, setPlayersProp]);
 
   useEffect(() => {
@@ -56,7 +70,6 @@ export function GameBoard({
 
   useEffect(() => {
     setGameStateProp(gameState);
-    setDebugInfo?.((prev => `state:${gameState}`));
   }, [gameState, setGameStateProp]);
 
   const activePlayer = useMemo(() => {
@@ -94,14 +107,47 @@ export function GameBoard({
 
 
   const handleMove = useCallback((row: number, col: number) => {
-    if (gameState !== "playing" || !activePlayer || activePlayer.isFinished) return;
+    if (gameState !== "playing" || !activePlayer || activePlayer.isFinished || !grid) {
+      console.log('Move rejected - invalid game state:', { 
+        gameState, 
+        activePlayer: activePlayer?.id,
+        isFinished: activePlayer?.isFinished,
+        hasGrid: !!grid
+      });
+      return;
+    }
   
+    // Use the already calculated possibleMoves
     const isPossible = possibleMoves.some(
       (move) => move.row === row && move.col === col
     );
+    
+    console.log('Executing move:', {
+      player: activePlayer.id,
+      type: activePlayer.type,
+      from: activePlayer.position,
+      to: { row, col },
+      isPossible
+    });
   
     if (isPossible) {
       const oldPos = activePlayer.position;
+      console.log('Executing move from', oldPos, 'to', { row, col });
+      
+      // Record move in history
+      const fromCell = grid[oldPos.row][oldPos.col];
+      const toCell = grid[row][col];
+      setMoveHistory(prev => [...prev, {
+        playerId: activePlayer.id,
+        from: {
+          value: fromCell.card.value,
+          suit: fromCell.card.suit
+        },
+        to: {
+          value: toCell.card.value,
+          suit: toCell.card.suit
+        }
+      }]);
       
       setPlayers(prevPlayers => 
         prevPlayers.map(p => 
@@ -122,6 +168,9 @@ export function GameBoard({
           next.add(pickedValue);
           return next;
         });
+        
+        // Update distribution after invalidating a cell
+        setDistribution(getCardDistribution(newGrid));
         return newGrid;
       });
 
@@ -157,6 +206,8 @@ export function GameBoard({
         initUsed.add(v);
       });
       setUsedValues(initUsed);
+      setDistribution(getCardDistribution(newGrid));
+      setMoveHistory([]);
       setGameState("playing");
     } catch (error) {
       console.error("Failed to start new game:", error);
@@ -173,10 +224,9 @@ export function GameBoard({
   }, [gridSize, playerCount, startNewGame]);
 
   // Effect for handling player logic (calculating moves, checking for finished players)
-  // Note: do not depend on `handleMove` here to avoid a feedback loop where
-  // setting `possibleMoves` changes `handleMove` identity and retriggers the effect.
   useEffect(() => {
     if (gameState !== 'playing' || !grid || !activePlayer || activePlayer.isFinished) {
+      console.log('No moves calculated:', { gameState, hasGrid: !!grid, player: activePlayer?.id, isFinished: activePlayer?.isFinished });
       setPossibleMoves([]);
       return;
     }
@@ -184,41 +234,61 @@ export function GameBoard({
     let moves = getPossibleMoves(grid, activePlayer.position);
     // Disallow moving onto any card value that has already been picked globally
     moves = moves.filter(m => !usedValues.has(grid[m.row][m.col].card.value));
-    setDebugInfo?.(`state:${gameState} grid:${grid.length}x${grid[0].length} current:${activePlayer.id} moves:${moves.length}`);
+    
+    console.log('Player state:', {
+      playerId: activePlayer.id,
+      type: activePlayer.type,
+      position: activePlayer.position,
+      possibleMoves: moves.length,
+      moves: moves
+    });
 
     if (activePlayer.type === 'cpu') {
-        setPossibleMoves([]); 
+        console.log('CPU turn starting, autoPlay:', cpuAutoPlay);
+        
         if (moves.length === 0) {
+            console.log('CPU has no moves, marking as finished');
             setPlayers(prev => prev.map(p => p.id === activePlayer.id ? { ...p, isFinished: true } : p));
             advanceTurn();
             return;
         }
 
-        // Simple heuristic: choose move that lands on highest-value card
-        const scored = moves.map(m => {
-          const cell = grid[m.row][m.col];
-          return { ...m, value: cell.card.value, card: cell.card };
-        });
-        const maxVal = Math.max(...scored.map(s => s.value));
-        const best = scored.filter(s => s.value === maxVal);
-        const choice = best[Math.floor(Math.random() * best.length)];
+        // Always show possible moves in manual mode
+        setPossibleMoves(cpuAutoPlay ? [] : moves);
 
-        setCpuThought?.(
-          `${activePlayer.type.toUpperCase()} ${activePlayer.id + 1}: ${moves.length} moves; picking ${choice.card.rank} of ${choice.card.suit} (v${choice.value}) @ (${choice.row},${choice.col})`
-        );
+        if (cpuAutoPlay) {
+          // Auto mode: CPU chooses and executes move
+          const scored = moves.map(m => {
+            const cell = grid[m.row][m.col];
+            return { ...m, value: cell.card.value, card: cell.card };
+          });
+          const maxVal = Math.max(...scored.map(s => s.value));
+          const best = scored.filter(s => s.value === maxVal);
+          const choice = best[Math.floor(Math.random() * best.length)];
 
-        const timeoutId = setTimeout(() => {
-            if (choice) {
-                // Re-calculate possible moves for handleMove
-                setPossibleMoves(moves);
-                handleMove(choice.row, choice.col);
-            }
-        }, CPU_MOVE_DELAY);
+          console.log('CPU auto mode - choosing move:', {
+            totalMoves: moves.length,
+            possibleMoves: moves,
+            selectedMove: choice
+          });
+          
+          const timeoutId = setTimeout(() => {
+              if (choice && grid) {
+                  console.log('CPU executing move:', choice);
+                  handleMove(choice.row, choice.col);
+              }
+          }, CPU_MOVE_DELAY);
 
-        return () => clearTimeout(timeoutId);
+          return () => clearTimeout(timeoutId);
+        } else {
+          // Manual mode: Show possible moves and wait for player to choose
+          console.log('CPU manual mode - waiting for player choice');
+        }
     } else { // Human player
+        console.log('Human turn, setting possible moves');
         setPossibleMoves(moves);
         if (moves.length === 0) {
+            console.log('Human has no moves, marking as finished');
             setPlayers(prev => prev.map(p => p.id === activePlayer.id ? { ...p, isFinished: true } : p));
             advanceTurn();
         }
@@ -296,6 +366,12 @@ export function GameBoard({
             )}
         </div>
       </div>
+      {grid && (
+        <div className="absolute top-4 right-4 flex flex-col gap-2">
+          <CardDistribution distribution={distribution} />
+          <MoveHistory moves={moveHistory} />
+        </div>
+      )}
     </div>
   );
 }

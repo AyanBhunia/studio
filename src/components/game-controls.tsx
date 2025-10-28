@@ -27,8 +27,8 @@ interface GameControlsProps {
   activePlayer: Player | null;
   winner: Player | null;
   gameState: "loading" | "playing" | "gameOver";
-  cpuThought?: string;
-  debugInfo?: string;
+  cpuAutoPlay: boolean;
+  setCpuAutoPlay: (value: boolean) => void;
 }
 
 export function GameControls({
@@ -43,8 +43,8 @@ export function GameControls({
   activePlayer,
   winner,
   gameState,
-  cpuThought,
-  debugInfo
+  cpuAutoPlay,
+  setCpuAutoPlay
 }: GameControlsProps) {
   return (
     <Card className="flex w-full md:max-w-sm flex-col rounded-none border-0 md:border-r md:shadow-lg">
@@ -102,17 +102,37 @@ export function GameControls({
               className="w-full sm:w-32"
             />
           </div>
+          <div className="flex items-center gap-4">
+            <Label htmlFor="cpu-mode" className="whitespace-nowrap font-bold">
+              CPU Mode
+            </Label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="cpu-mode"
+                  checked={!cpuAutoPlay}
+                  onChange={() => setCpuAutoPlay(false)}
+                  className="accent-primary"
+                />
+                <span>Manual</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="cpu-mode"
+                  checked={cpuAutoPlay}
+                  onChange={() => setCpuAutoPlay(true)}
+                  className="accent-primary"
+                />
+                <span>Auto</span>
+              </label>
+            </div>
+          </div>
           <Button onClick={onNewGame} className="w-full">
             New Game
           </Button>
-          <div className="rounded-md border bg-background p-2 text-xs text-muted-foreground min-h-12">
-            <div className="font-bold text-foreground mb-1">CPU Thinking</div>
-            <div className="line-clamp-3 break-words">{cpuThought || "Idle"}</div>
-          </div>
-          <div className="rounded-md border bg-background p-2 text-xs text-muted-foreground min-h-12">
-            <div className="font-bold text-foreground mb-1">Debug</div>
-            <div className="line-clamp-4 break-words whitespace-pre-wrap">{debugInfo || "No data"}</div>
-          </div>
+
         </div>
       </CardContent>
     </Card>
