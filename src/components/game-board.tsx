@@ -28,6 +28,7 @@ export function GameBoard() {
   const [gameState, setGameState] = useState<"loading" | "playing" | "gameOver">("loading");
   const [justMovedTo, setJustMovedTo] = useState<PlayerPosition | null>(null);
   const [winner, setWinner] = useState<Player | null>(null);
+  const [cardSize, setCardSize] = useState(100);
 
   const { toast } = useToast();
 
@@ -198,10 +199,13 @@ export function GameBoard() {
           </div>
         ))}
       </div>
-       <div className="flex-1 w-full flex items-center justify-center p-2 min-h-0">
+      <div className="flex-1 w-full flex items-center justify-center p-2 min-h-0">
         <div
-            className="relative grid w-full max-w-[min(90vw,80vh)] gap-2"
-            style={gridStyle}
+            className="relative grid aspect-[5/7] w-full max-w-[min(90vw,80vh)] gap-2"
+            style={{
+                ...gridStyle,
+                maxWidth: `min(calc(90vw * ${cardSize / 100}), calc(80vh * ${cardSize / 100}))`
+            }}
         >
             <AnimatePresence>
             {gameState === 'gameOver' && winner && (
@@ -286,6 +290,20 @@ export function GameBoard() {
             value={playerCount}
             onChange={(e) => setPlayerCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
             className="w-20"
+          />
+        </div>
+        <div className="flex flex-grow items-center gap-4">
+          <Label htmlFor="card-size-slider" className="whitespace-nowrap font-bold">
+            Card Size: {cardSize}%
+          </Label>
+          <Slider
+            id="card-size-slider"
+            min={20}
+            max={100}
+            step={5}
+            value={[cardSize]}
+            onValueChange={(value) => setCardSize(value[0])}
+            className="w-full sm:w-32"
           />
         </div>
         <Button onClick={() => startNewGame(gridSize, playerCount)} className="w-full sm:w-auto flex-grow sm:flex-grow-0">
