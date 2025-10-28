@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { GameBoard } from "@/components/game-board";
 import { GameControls } from "@/components/game-controls";
 import type { Player } from "@/lib/types";
@@ -36,7 +36,10 @@ export default function Home() {
         winner={winner}
         gameState={gameState}
       />
-      <div className="flex flex-1 items-center justify-center p-4 overflow-auto">
+      <div 
+        className="flex flex-1 items-center justify-center p-4 overflow-auto bg-cover bg-center"
+        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1564191690443-a6a9b417300a?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')" }}
+      >
         <GameBoard
           key={gameId}
           gridSize={gridSize}
