@@ -3,7 +3,6 @@
 
 import type { Card, Suit } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ClubIcon, DiamondIcon, HeartIcon, SpadeIcon } from "./icons";
 import { Crown, Bot } from "lucide-react";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
@@ -21,11 +20,11 @@ interface PlayingCardProps {
   playerType?: 'human' | 'cpu';
 }
 
-const suitConfig: Record<Suit, { icon: React.ComponentType<{ className?: string }>, color: string }> = {
-  hearts: { icon: HeartIcon, color: "text-[#D96F95]" },
-  diamonds: { icon: DiamondIcon, color: "text-[#5DA0A8]" },
-  clubs: { icon: ClubIcon, color: "text-[#58A87B]" },
-  spades: { icon: SpadeIcon, color: "text-[#8E82B3]" },
+const suitConfig: Record<Suit, { symbol: string, color: string }> = {
+  hearts: { symbol: "♥", color: "text-[#D96F95]" },
+  diamonds: { symbol: "♦", color: "text-[#5DA0A8]" },
+  clubs: { symbol: "♣", color: "text-[#58A87B]" },
+  spades: { symbol: "♠", color: "text-[#8E82B3]" },
 };
 
 
@@ -41,7 +40,7 @@ export function PlayingCard({
   playerType,
 }: PlayingCardProps) {
   const cardBack = PlaceHolderImages.find((img) => img.id === "card-back");
-  const { icon: SuitIcon, color: suitColor } = suitConfig[card.suit];
+  const { symbol: suitSymbol, color: suitColor } = suitConfig[card.suit];
   
   if (isInvalid) {
     return (
@@ -83,8 +82,8 @@ export function PlayingCard({
         </span>
       </div>
 
-      <SuitIcon className="absolute left-1 top-1 h-4 w-4 sm:h-5 sm:w-5" />
-      <SuitIcon className="absolute bottom-1 right-1 h-4 w-4 rotate-180 sm:h-5 sm:w-5" />
+      <span className="absolute left-1 top-1 text-lg sm:text-xl md:text-2xl">{suitSymbol}</span>
+      <span className="absolute bottom-1 right-1 rotate-180 text-lg sm:text-xl md:text-2xl">{suitSymbol}</span>
 
       {isKingHere && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
