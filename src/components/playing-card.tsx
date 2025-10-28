@@ -22,11 +22,12 @@ interface PlayingCardProps {
 }
 
 const suitConfig: Record<Suit, { icon: React.ComponentType<{ className?: string }>, color: string }> = {
-  hearts: { icon: HeartIcon, color: "text-[#F7DAE5]" },
-  diamonds: { icon: DiamondIcon, color: "text-[#C3E2E6]" },
-  clubs: { icon: ClubIcon, color: "text-[#B3DDC4]" },
-  spades: { icon: SpadeIcon, color: "text-[#D0CCE0]" },
+  hearts: { icon: HeartIcon, color: "text-[#E5A9C0]" },
+  diamonds: { icon: DiamondIcon, color: "text-[#96C9A9]" },
+  clubs: { icon: ClubIcon, color: "text-[#89C4CE]" },
+  spades: { icon: SpadeIcon, color: "text-[#B6A8D4]" },
 };
+
 
 export function PlayingCard({
   card,
@@ -76,20 +77,18 @@ export function PlayingCard({
       )}
       aria-label={`Card ${card.rank} of ${card.suit}. ${isPossibleMove ? "Possible move." : ""}`}
     >
-       <div className="absolute left-0.5 top-0.5 p-0.5 text-left font-bold sm:left-1 sm:top-1 text-base sm:text-lg md:text-xl">
-        {card.rank}
-      </div>
-      <div className="absolute bottom-0.5 right-0.5 rotate-180 p-0.5 text-left font-bold sm:bottom-1 sm:right-1 text-base sm:text-lg md:text-xl">
-        {card.rank}
-      </div>
+      <SuitIcon className="absolute left-0.5 top-0.5 h-4 w-4 opacity-50 sm:h-5 sm:w-5" />
+      <SuitIcon className="absolute bottom-0.5 right-0.5 h-4 w-4 rotate-180 opacity-50 sm:h-5 sm:w-5" />
 
       <div className="flex h-full w-full items-center justify-center">
-        <SuitIcon
+        <div
           className={cn(
-            "h-8 w-8 opacity-50 sm:h-12 sm:w-12",
+            "text-4xl font-bold opacity-80 sm:text-5xl md:text-6xl",
             isKingHere && "opacity-10"
           )}
-        />
+        >
+          {card.rank}
+        </div>
       </div>
 
       {isKingHere && (
