@@ -35,6 +35,59 @@ export function GameBoard() {
     return players.find((p) => p.id === currentPlayerId);
   }, [players, currentPlayerId]);
 
+  const advanceTurn = useCallback(() => {
+    const activePlayers = players.filter(p => !p.isFinished);
+    if (activePlayers.length <= 1) {
+      setWinner(activePlayers[0] || players.find(p => p.id === currentPlayerId) || null);
+      setGameState("gameOver");
+      return;
+    }
+
+    const currentPlayerIndexInAll = players.findIndex(p => p.id === currentPlayerId);
+    let nextPlayerIndex = (currentPlayerIndexInAll + 1);
+    while (players[nextPlayerIndex % players.length]?.isFinished) {
+      nextPlayerIndex++;
+    }
+    
+    const nextPlayer = players[nextPlayerIndex % players.length];
+    if (nextPlayer) {
+      setCurrentPlayerId(nextPlayer.id);
+    }
+  }, [players, currentPlayerId]);
+
+
+  const handleMove = useCallback((row: number, col: number) => {
+    if (gameState !== "playing" || !activePlayer || activePlayer.isFinished) return;
+  
+    const isPossible = possibleMoves.some(
+      (move) => move.row === row && move.col === col
+    );
+  
+    if (isPossible) {
+      const oldPos = activePlayer.position;
+      
+      setPlayers(prevPlayers => 
+        prevPlayers.map(p => 
+          p.id === activePlayer.id ? { ...p, position: { row, col } } : p
+        )
+      );
+  
+      setGrid(prevGrid => {
+        if (!prevGrid) return null;
+        const newGrid = prevGrid.map((r) => r.map((c) => ({ ...c })));
+        newGrid[oldPos.row][oldPos.col].isInvalid = true;
+        delete newGrid[oldPos.row][oldPos.col].occupiedBy;
+        newGrid[row][col].occupiedBy = activePlayer.id;
+        return newGrid;
+      });
+
+      setJustMovedTo({ row, col });
+      setTimeout(() => setJustMovedTo(null), 500);
+      
+      advanceTurn();
+    }
+  }, [gameState, activePlayer, possibleMoves, advanceTurn]);
+
   const startNewGame = useCallback((size: number, numPlayers: number) => {
     setGameState("loading");
     if (numPlayers < 1) {
@@ -69,58 +122,6 @@ export function GameBoard() {
     }
   }, [toast]);
 
-  const advanceTurn = useCallback(() => {
-    const activePlayers = players.filter(p => !p.isFinished);
-    if (activePlayers.length <= 1) {
-      setWinner(activePlayers[0] || players.find(p => p.id === currentPlayerId) || null);
-      setGameState("gameOver");
-      return;
-    }
-
-    const currentPlayerIndexInAll = players.findIndex(p => p.id === currentPlayerId);
-    let nextPlayerIndex = (currentPlayerIndexInAll + 1);
-    while (players[nextPlayerIndex % players.length]?.isFinished) {
-      nextPlayerIndex++;
-    }
-    
-    const nextPlayer = players[nextPlayerIndex % players.length];
-    if (nextPlayer) {
-      setCurrentPlayerId(nextPlayer.id);
-    }
-  }, [players, currentPlayerId]);
-
-  const handleMove = useCallback((row: number, col: number) => {
-    if (gameState !== "playing" || !activePlayer || activePlayer.isFinished) return;
-  
-    const isPossible = possibleMoves.some(
-      (move) => move.row === row && move.col === col
-    );
-  
-    if (isPossible) {
-      const oldPos = activePlayer.position;
-      
-      setPlayers(prevPlayers => 
-        prevPlayers.map(p => 
-          p.id === activePlayer.id ? { ...p, position: { row, col } } : p
-        )
-      );
-  
-      setGrid(prevGrid => {
-        if (!prevGrid) return null;
-        const newGrid = prevGrid.map((r) => r.map((c) => ({ ...c })));
-        newGrid[oldPos.row][oldPos.col].isInvalid = true;
-        delete newGrid[oldPos.row][oldPos.col].occupiedBy;
-        newGrid[row][col].occupiedBy = activePlayer.id;
-        return newGrid;
-      });
-
-      setJustMovedTo({ row, col });
-      setTimeout(() => setJustMovedTo(null), 500);
-      
-      advanceTurn();
-    }
-  }, [gameState, activePlayer, possibleMoves, advanceTurn]);
-
   useEffect(() => {
     startNewGame(gridSize, playerCount);
   }, []);
@@ -131,6 +132,8 @@ export function GameBoard() {
       setPossibleMoves([]);
       return;
     }
+
+    if (activePlayer.type === 'cpu') return;
 
     const moves = getPossibleMoves(grid, activePlayer.position);
     setPossibleMoves(moves);
@@ -143,19 +146,28 @@ export function GameBoard() {
 
   // Effect for handling CPU moves
   useEffect(() => {
-    if (gameState !== 'playing' || !activePlayer || activePlayer.type !== 'cpu' || possibleMoves.length === 0) {
+    if (gameState !== 'playing' || !grid || !activePlayer || activePlayer.type !== 'cpu' ) {
       return;
     }
 
+    const moves = getPossibleMoves(grid, activePlayer.position);
+    setPossibleMoves(moves);
+
+    if (moves.length === 0 && !activePlayer.isFinished) {
+        setPlayers(prev => prev.map(p => p.id === activePlayer.id ? { ...p, isFinished: true } : p));
+        advanceTurn();
+        return;
+    }
+
     const timeoutId = setTimeout(() => {
-      const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+      const randomMove = moves[Math.floor(Math.random() * moves.length)];
       if (randomMove) {
         handleMove(randomMove.row, randomMove.col);
       }
     }, CPU_MOVE_DELAY);
 
     return () => clearTimeout(timeoutId);
-  }, [gameState, activePlayer, possibleMoves, handleMove]);
+  }, [gameState, grid, activePlayer, handleMove, advanceTurn]);
 
   const gridStyle = useMemo(() => ({
       gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
@@ -184,7 +196,7 @@ export function GameBoard() {
       </div>
       <div className="flex-1 w-full flex items-center justify-center p-2 min-h-0">
         <div
-            className="relative grid aspect-square w-full max-w-full max-h-full gap-1 sm:gap-2"
+            className="relative grid aspect-square w-full max-w-[min(90vw,90vh)] gap-1 sm:gap-2"
             style={gridStyle}
         >
             <AnimatePresence>
@@ -279,5 +291,3 @@ export function GameBoard() {
     </div>
   );
 }
-
-    
