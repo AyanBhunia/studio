@@ -14,8 +14,8 @@ import { Crown, Users, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_GRID_SIZE = 5;
-const DEFAULT_PLAYER_COUNT = 2; // Default to 1 CPU player
-const CPU_MOVE_DELAY = 1000; // 1 second delay for CPU move
+const DEFAULT_PLAYER_COUNT = 2;
+const CPU_MOVE_DELAY = 1000;
 
 export function GameBoard() {
   const [gridSize, setGridSize] = useState(DEFAULT_GRID_SIZE);
@@ -110,7 +110,7 @@ export function GameBoard() {
         });
   
         setJustMovedTo({ row, col });
-        setTimeout(() => setJustMovedTo(null), 500); // Reset pulse animation
+        setTimeout(() => setJustMovedTo(null), 500);
         
         advanceTurn();
         return newPlayers;
@@ -118,13 +118,10 @@ export function GameBoard() {
     }
   }, [gameState, activePlayer, possibleMoves, advanceTurn]);
 
-  // Initial game setup
   useEffect(() => {
     startNewGame(gridSize, playerCount);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Game logic for the current player's turn
   useEffect(() => {
     if (gameState !== 'playing' || !grid || !activePlayer) {
       return;
@@ -149,9 +146,7 @@ export function GameBoard() {
 
       return () => clearTimeout(timeoutId);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState, grid, activePlayer]);
-
+  }, [gameState, grid, activePlayer, advanceTurn, handleMove]);
 
   const gridStyle = useMemo(() => ({
       gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
@@ -178,9 +173,9 @@ export function GameBoard() {
           </div>
         ))}
       </div>
-      <div className="flex-1 w-full flex items-center justify-center p-2">
+      <div className="flex-1 w-full flex items-center justify-center p-2 min-h-0">
         <div
-            className="relative grid w-full max-w-full aspect-square"
+            className="relative grid aspect-square max-h-full max-w-full"
             style={gridStyle}
         >
             <AnimatePresence>
@@ -274,3 +269,4 @@ export function GameBoard() {
       </div>
     </div>
   );
+}
