@@ -53,10 +53,13 @@ export function GameBoard({
   }, [gameState, setGameStateProp]);
 
   const activePlayer = useMemo(() => {
-    const player = players.find((p) => p.id === currentPlayerId);
-    setActivePlayerProp(player || null);
-    return player;
-  }, [players, currentPlayerId, setActivePlayerProp]);
+    return players.find((p) => p.id === currentPlayerId);
+  }, [players, currentPlayerId]);
+
+  useEffect(() => {
+    setActivePlayerProp(activePlayer || null);
+  }, [activePlayer, setActivePlayerProp]);
+
 
   const advanceTurn = useCallback(() => {
     const activePlayers = players.filter(p => !p.isFinished);
