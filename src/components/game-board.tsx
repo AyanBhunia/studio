@@ -27,25 +27,30 @@ export function GameBoard() {
   const [gameState, setGameState] = useState<"loading" | "playing" | "gameOver">("loading");
   const [justMovedTo, setJustMovedTo] = useState<PlayerPosition | null>(null);
   const [winner, setWinner] = useState<Player | null>(null);
-  
+
   const { toast } = useToast();
+
+  const activePlayer = useMemo(() => {
+    return players.find((p) => p.id === currentPlayerId);
+  }, [players, currentPlayerId]);
 
   const startNewGame = useCallback((size: number, numPlayers: number) => {
     setGameState("loading");
     if (numPlayers < 1) {
-        toast({
-            variant: "destructive",
-            title: "Invalid Player Count",
-            description: "Number of players must be at least 1."
-        });
-        setGameState("playing");
-        return;
+      toast({
+        variant: "destructive",
+        title: "Invalid Player Count",
+        description: "Number of players must be at least 1.",
+      });
+      setGameState("playing");
+      return;
     }
     try {
       const { grid: newGrid, players: newPlayers } = generateGrid(size, numPlayers);
       setGrid(newGrid);
       setPlayers(newPlayers);
       setCurrentPlayerId(0);
+      setPossibleMoves([]);
       setJustMovedTo(null);
       setWinner(null);
       setGameState("playing");
@@ -62,79 +67,90 @@ export function GameBoard() {
       });
     }
   }, [toast]);
-  
-  useEffect(() => {
-    startNewGame(gridSize, playerCount);
-  }, []);
 
-  const activePlayer = useMemo(() => {
-    return players.find(p => p.id === currentPlayerId);
+  const advanceTurn = useCallback(() => {
+    const activePlayers = players.filter(p => !p.isFinished);
+    if (activePlayers.length <= 1) {
+      setWinner(activePlayers[0] || players.find(p => p.id === currentPlayerId) || null);
+      setGameState("gameOver");
+      return;
+    }
+
+    const currentPlayerIndex = players.findIndex(p => p.id === currentPlayerId);
+    let nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+    while (players[nextPlayerIndex]?.isFinished) {
+      nextPlayerIndex = (nextPlayerIndex + 1) % players.length;
+    }
+    if (players[nextPlayerIndex]) {
+      setCurrentPlayerId(players[nextPlayerIndex].id);
+    }
   }, [players, currentPlayerId]);
 
   const handleMove = useCallback((row: number, col: number) => {
     if (gameState !== "playing" || !activePlayer || activePlayer.isFinished) return;
-
+  
     const isPossible = possibleMoves.some(
       (move) => move.row === row && move.col === col
     );
-
+  
     if (isPossible) {
-      const newGrid = grid!.map((r) => r.map((c) => ({ ...c })));
-      
-      const oldPos = activePlayer.position;
-      newGrid[oldPos.row][oldPos.col].isInvalid = true;
-      delete newGrid[oldPos.row][oldPos.col].occupiedBy;
-
-      newGrid[row][col].occupiedBy = activePlayer.id;
-      
-      setGrid(newGrid);
-
-      setPlayers(prev => 
-        prev.map(p => p.id === activePlayer.id ? {...p, position: { row, col }} : p)
-      );
-      
-      setJustMovedTo({ row, col });
-      setTimeout(() => setJustMovedTo(null), 500); // Reset pulse animation
+      setPlayers(prevPlayers => {
+        const newPlayers = prevPlayers.map(p => 
+          p.id === activePlayer.id ? { ...p, position: { row, col } } : p
+        );
+  
+        setGrid(prevGrid => {
+          if (!prevGrid) return null;
+          const newGrid = prevGrid.map((r) => r.map((c) => ({ ...c })));
+          const oldPos = activePlayer.position;
+          newGrid[oldPos.row][oldPos.col].isInvalid = true;
+          delete newGrid[oldPos.row][oldPos.col].occupiedBy;
+          newGrid[row][col].occupiedBy = activePlayer.id;
+          return newGrid;
+        });
+  
+        setJustMovedTo({ row, col });
+        setTimeout(() => setJustMovedTo(null), 500); // Reset pulse animation
+        
+        advanceTurn();
+        return newPlayers;
+      });
     }
-  }, [gameState, activePlayer, grid, possibleMoves]);
+  }, [gameState, activePlayer, possibleMoves, advanceTurn]);
 
+  // Initial game setup
   useEffect(() => {
-    if (grid && activePlayer && !activePlayer.isFinished && gameState === 'playing') {
-      const moves = getPossibleMoves(grid, activePlayer.position);
-      setPossibleMoves(moves);
+    startNewGame(gridSize, playerCount);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-      if (moves.length === 0) {
-        setPlayers(prev => prev.map(p => p.id === activePlayer.id ? {...p, isFinished: true} : p));
-        return; // Skip CPU move if player is finished
-      }
-
-      if (activePlayer.type === 'cpu') {
-        setTimeout(() => {
-            const randomMove = moves[Math.floor(Math.random() * moves.length)];
-            if (randomMove) {
-                handleMove(randomMove.row, randomMove.col);
-            }
-        }, CPU_MOVE_DELAY);
-      }
-    }
-  }, [grid, activePlayer, gameState, handleMove]);
-
+  // Game logic for the current player's turn
   useEffect(() => {
-    const activePlayers = players.filter(p => !p.isFinished);
-    if (gameState === 'playing' && players.length > 0 && activePlayers.length <= 1) {
-        setWinner(activePlayers[0] || players.find(p => p.id === currentPlayerId) || null);
-        setGameState("gameOver");
-    } else {
-        const currentPlayerIndex = players.findIndex(p => p.id === currentPlayerId);
-        let nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
-        while(players[nextPlayerIndex]?.isFinished) {
-            nextPlayerIndex = (nextPlayerIndex + 1) % players.length;
-        }
-        if(players[nextPlayerIndex]) {
-            setCurrentPlayerId(players[nextPlayerIndex].id);
-        }
+    if (gameState !== 'playing' || !grid || !activePlayer) {
+      return;
     }
-  }, [players, gameState, currentPlayerId]);
+
+    const moves = getPossibleMoves(grid, activePlayer.position);
+    setPossibleMoves(moves);
+
+    if (moves.length === 0 && !activePlayer.isFinished) {
+      setPlayers(prev => prev.map(p => p.id === activePlayer.id ? { ...p, isFinished: true } : p));
+      advanceTurn();
+      return;
+    }
+
+    if (activePlayer.type === 'cpu') {
+      const timeoutId = setTimeout(() => {
+        const randomMove = moves[Math.floor(Math.random() * moves.length)];
+        if (randomMove) {
+          handleMove(randomMove.row, randomMove.col);
+        }
+      }, CPU_MOVE_DELAY);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [gameState, grid, activePlayer, handleMove, advanceTurn]);
+
 
   const gridStyle = useMemo(() => ({
       gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
