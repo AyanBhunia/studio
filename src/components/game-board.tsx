@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -183,7 +184,7 @@ export function GameBoard() {
       </div>
       <div className="flex-1 w-full flex items-center justify-center p-2 min-h-0">
         <div
-            className="relative grid aspect-square w-full max-w-full max-h-full"
+            className="relative grid aspect-square w-full max-w-full max-h-full gap-1 sm:gap-2"
             style={gridStyle}
         >
             <AnimatePresence>
@@ -278,3 +279,5 @@ export function GameBoard() {
     </div>
   );
 }
+
+    
