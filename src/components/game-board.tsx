@@ -69,24 +69,23 @@ export function GameBoard() {
   }, [toast]);
 
   const advanceTurn = useCallback(() => {
-    setPlayers(currentPlayers => {
-        const activePlayers = currentPlayers.filter(p => !p.isFinished);
-        if (activePlayers.length <= 1) {
-          setWinner(activePlayers[0] || currentPlayers.find(p => p.id === currentPlayerId) || null);
-          setGameState("gameOver");
-          return currentPlayers;
-        }
+    const activePlayers = players.filter(p => !p.isFinished);
+    if (activePlayers.length <= 1) {
+      setWinner(activePlayers[0] || players.find(p => p.id === currentPlayerId) || null);
+      setGameState("gameOver");
+      return;
+    }
+
+    const currentPlayerIndexInAll = players.findIndex(p => p.id === currentPlayerId);
+    let nextPlayerIndex = (currentPlayerIndexInAll + 1);
+    while (players[nextPlayerIndex % players.length]?.isFinished) {
+      nextPlayerIndex++;
+    }
     
-        const currentPlayerIndex = currentPlayers.findIndex(p => p.id === currentPlayerId);
-        let nextPlayerIndex = (currentPlayerIndex + 1) % currentPlayers.length;
-        while (currentPlayers[nextPlayerIndex]?.isFinished) {
-          nextPlayerIndex = (nextPlayerIndex + 1) % currentPlayers.length;
-        }
-        if (currentPlayers[nextPlayerIndex]) {
-          setCurrentPlayerId(currentPlayers[nextPlayerIndex].id);
-        }
-        return currentPlayers;
-    });
+    const nextPlayer = players[nextPlayerIndex % players.length];
+    if (nextPlayer) {
+      setCurrentPlayerId(nextPlayer.id);
+    }
   }, [players, currentPlayerId]);
 
   const handleMove = useCallback((row: number, col: number) => {
@@ -125,6 +124,7 @@ export function GameBoard() {
     startNewGame(gridSize, playerCount);
   }, []);
 
+  // Effect for handling player logic (calculating moves, checking for finished players)
   useEffect(() => {
     if (gameState !== 'playing' || !grid || !activePlayer) {
       setPossibleMoves([]);
@@ -137,20 +137,24 @@ export function GameBoard() {
     if (moves.length === 0 && !activePlayer.isFinished) {
       setPlayers(prev => prev.map(p => p.id === activePlayer.id ? { ...p, isFinished: true } : p));
       advanceTurn();
+    }
+  }, [gameState, grid, activePlayer, advanceTurn]);
+
+  // Effect for handling CPU moves
+  useEffect(() => {
+    if (gameState !== 'playing' || !activePlayer || activePlayer.type !== 'cpu' || possibleMoves.length === 0) {
       return;
     }
 
-    if (activePlayer.type === 'cpu') {
-      const timeoutId = setTimeout(() => {
-        const randomMove = moves[Math.floor(Math.random() * moves.length)];
-        if (randomMove) {
-          handleMove(randomMove.row, randomMove.col);
-        }
-      }, CPU_MOVE_DELAY);
+    const timeoutId = setTimeout(() => {
+      const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+      if (randomMove) {
+        handleMove(randomMove.row, randomMove.col);
+      }
+    }, CPU_MOVE_DELAY);
 
-      return () => clearTimeout(timeoutId);
-    }
-  }, [gameState, grid, activePlayer, advanceTurn, handleMove]);
+    return () => clearTimeout(timeoutId);
+  }, [gameState, activePlayer, possibleMoves, handleMove]);
 
   const gridStyle = useMemo(() => ({
       gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
@@ -172,7 +176,7 @@ export function GameBoard() {
                 <Bot className={cn(playerColors[player.id % playerColors.length], player.isFinished && "opacity-30")} />
             )}
             <span className={cn("font-bold", player.isFinished && "line-through text-muted-foreground")}>
-              {player.type === 'human' ? 'Player 1' : `CPU ${player.id}`}
+              {player.type === 'human' ? 'Player 1' : `CPU ${player.id + 1}`}
             </span>
           </div>
         ))}
@@ -192,7 +196,7 @@ export function GameBoard() {
                 >
                 <div className="transform-gpu rounded-lg bg-card p-6 text-center shadow-xl ring-1 ring-border">
                     <h2 className="font-headline text-3xl font-bold text-primary">
-                    {winner.type === 'human' ? `Player ${winner.id + 1} Wins!` : `CPU ${winner.id} Wins!`}
+                    {winner.type === 'human' ? `Player 1 Wins!` : `CPU ${winner.id + 1} Wins!`}
                     </h2>
                     <p className="mt-2 text-card-foreground">
                     Congratulations on being the last king standing.
