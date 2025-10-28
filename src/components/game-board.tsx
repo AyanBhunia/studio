@@ -178,7 +178,7 @@ export function GameBoard() {
   const playerColors = ['text-yellow-400', 'text-blue-400', 'text-green-400', 'text-red-400'];
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-4">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4 p-4">
       <div className="w-full flex justify-around items-center flex-wrap gap-2 md:gap-4 mb-2 px-4">
         {players.map(player => (
           <div key={player.id} className={cn(
@@ -196,9 +196,9 @@ export function GameBoard() {
           </div>
         ))}
       </div>
-      <div className="flex-1 w-full flex items-center justify-center p-2 min-h-0">
+      <div className="flex-1 w-full flex items-center justify-center min-h-0">
         <div
-            className="relative grid aspect-square w-full max-w-[min(90vw,80vh)] gap-1"
+            className="relative grid aspect-square w-full max-w-[min(90vw,80vh)] gap-2"
             style={gridStyle}
         >
             <AnimatePresence>
