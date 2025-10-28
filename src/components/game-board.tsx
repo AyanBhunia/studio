@@ -160,8 +160,8 @@ export function GameBoard() {
   const playerColors = ['text-yellow-400', 'text-blue-400', 'text-green-400', 'text-red-400'];
 
   return (
-    <div className="flex w-full flex-col items-center justify-center gap-4 p-2 md:p-4">
-       <div className="w-full flex justify-around items-center flex-wrap gap-2 md:gap-4 mb-2">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4">
+      <div className="w-full flex justify-around items-center flex-wrap gap-2 md:gap-4 mb-2 px-4">
         {players.map(player => (
           <div key={player.id} className={cn(
               "flex items-center gap-2 p-2 rounded-lg transition-all",
@@ -178,63 +178,66 @@ export function GameBoard() {
           </div>
         ))}
       </div>
-      <div
-        className="relative grid w-full max-w-2xl gap-1 sm:gap-2"
-        style={gridStyle}
-      >
-        <AnimatePresence>
-          {gameState === 'gameOver' && winner && (
-             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/80 backdrop-blur-sm"
-            >
-              <div className="transform-gpu rounded-lg bg-card p-6 text-center shadow-xl ring-1 ring-border">
-                <h2 className="font-headline text-3xl font-bold text-primary">
-                  {winner.type === 'human' ? `Player ${winner.id + 1} Wins!` : `CPU ${winner.id} Wins!`}
-                </h2>
-                <p className="mt-2 text-card-foreground">
-                  Congratulations on being the last king standing.
-                </p>
-                <Button onClick={() => startNewGame(gridSize, playerCount)} className="mt-4">
-                  Play Again
-                </Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      <div className="flex-1 w-full flex items-center justify-center p-2">
+        <div
+            className="relative grid w-full max-w-full aspect-square"
+            style={gridStyle}
+        >
+            <AnimatePresence>
+            {gameState === 'gameOver' && winner && (
+                <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/80 backdrop-blur-sm"
+                >
+                <div className="transform-gpu rounded-lg bg-card p-6 text-center shadow-xl ring-1 ring-border">
+                    <h2 className="font-headline text-3xl font-bold text-primary">
+                    {winner.type === 'human' ? `Player ${winner.id + 1} Wins!` : `CPU ${winner.id} Wins!`}
+                    </h2>
+                    <p className="mt-2 text-card-foreground">
+                    Congratulations on being the last king standing.
+                    </p>
+                    <Button onClick={() => startNewGame(gridSize, playerCount)} className="mt-4">
+                    Play Again
+                    </Button>
+                </div>
+                </motion.div>
+            )}
+            </AnimatePresence>
 
-        {grid &&
-          grid.map((row, rowIndex) =>
-            row.map((cell, colIndex) => {
-              const kingPlayer = players.find(p => p.position.row === rowIndex && p.position.col === colIndex);
-              const isKingHere = !!kingPlayer;
+            {grid &&
+            grid.map((row, rowIndex) =>
+                row.map((cell, colIndex) => {
+                const kingPlayer = players.find(p => p.position.row === rowIndex && p.position.col === colIndex);
+                const isKingHere = !!kingPlayer;
 
-              const isPossible = possibleMoves.some(
-                (move) => move.row === rowIndex && move.col === colIndex
-              );
-              const movedTo = justMovedTo?.row === rowIndex && justMovedTo?.col === colIndex;
+                const isPossible = possibleMoves.some(
+                    (move) => move.row === rowIndex && move.col === colIndex
+                );
+                const movedTo = justMovedTo?.row === rowIndex && justMovedTo?.col === colIndex;
 
-              const isHumanPlayerTurn = activePlayer?.type === 'human';
+                const isHumanPlayerTurn = activePlayer?.type === 'human';
 
-              return (
-                <PlayingCard
-                  key={`${rowIndex}-${colIndex}`}
-                  card={cell.card}
-                  isInvalid={cell.isInvalid}
-                  isKingHere={isKingHere}
-                  kingColor={isKingHere ? playerColors[kingPlayer.id % playerColors.length] : undefined}
-                  isPossibleMove={isPossible && isHumanPlayerTurn}
-                  justMovedTo={movedTo}
-                  onClick={() => isHumanPlayerTurn && handleMove(rowIndex, colIndex)}
-                  isCurrentPlayerTurn={isKingHere && kingPlayer.id === currentPlayerId}
-                  playerType={kingPlayer?.type}
-                />
-              );
-            })
-          )}
+                return (
+                    <PlayingCard
+                    key={`${rowIndex}-${colIndex}`}
+                    card={cell.card}
+                    isInvalid={cell.isInvalid}
+                    isKingHere={isKingHere}
+                    kingColor={isKingHere ? playerColors[kingPlayer.id % playerColors.length] : undefined}
+                    isPossibleMove={isPossible && isHumanPlayerTurn}
+                    justMovedTo={movedTo}
+                    onClick={() => isHumanPlayerTurn && handleMove(rowIndex, colIndex)}
+                    isCurrentPlayerTurn={isKingHere && kingPlayer.id === currentPlayerId}
+                    playerType={kingPlayer?.type}
+                    />
+                );
+                })
+            )}
+        </div>
       </div>
+
 
       <div className="flex w-full max-w-2xl flex-col items-stretch gap-4 rounded-lg border bg-card p-4 sm:flex-row sm:flex-wrap sm:justify-between">
         <div className="flex flex-grow items-center gap-4">
@@ -271,4 +274,3 @@ export function GameBoard() {
       </div>
     </div>
   );
-}
