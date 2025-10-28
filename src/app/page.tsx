@@ -9,8 +9,8 @@ import {
 
 export default function Home() {
   return (
-    <main className="container mx-auto flex min-h-screen flex-col items-center justify-center p-4 sm:p-8">
-      <Card className="w-full max-w-5xl shadow-2xl">
+    <main className="flex h-screen w-screen items-center justify-center bg-background">
+      <Card className="flex h-full w-full flex-col rounded-none border-0">
         <CardHeader className="text-center">
           <CardTitle className="font-headline text-3xl tracking-wider text-primary sm:text-4xl md:text-5xl">
             Royal Grid Domination
@@ -19,7 +19,7 @@ export default function Home() {
             The last king standing wins the grid. Plan your moves wisely.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-1 flex-col items-center justify-center p-4">
           <GameBoard />
         </CardContent>
       </Card>
