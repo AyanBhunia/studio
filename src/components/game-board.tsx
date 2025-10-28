@@ -62,25 +62,28 @@ export function GameBoard({
 
 
   const advanceTurn = useCallback(() => {
-    const activePlayers = players.filter(p => !p.isFinished);
-    if (activePlayers.length <= 1) {
-      const winnerPlayer = activePlayers[0] || players.find(p => p.id === currentPlayerId) || null;
-      setWinner(winnerPlayer);
-      setGameState("gameOver");
-      return;
-    }
+    setPlayers(currentPlayers => {
+        const activePlayers = currentPlayers.filter(p => !p.isFinished);
+        if (activePlayers.length <= 1) {
+            const winnerPlayer = activePlayers[0] || currentPlayers.find(p => p.id === currentPlayerId) || null;
+            setWinner(winnerPlayer);
+            setGameState("gameOver");
+            return currentPlayers;
+        }
 
-    const currentPlayerIndexInAll = players.findIndex(p => p.id === currentPlayerId);
-    let nextPlayerIndex = (currentPlayerIndexInAll + 1);
-    while (players[nextPlayerIndex % players.length]?.isFinished) {
-      nextPlayerIndex++;
-    }
-    
-    const nextPlayer = players[nextPlayerIndex % players.length];
-    if (nextPlayer) {
-      setCurrentPlayerId(nextPlayer.id);
-    }
-  }, [players, currentPlayerId]);
+        const currentPlayerIndexInAll = currentPlayers.findIndex(p => p.id === currentPlayerId);
+        let nextPlayerIndex = (currentPlayerIndexInAll + 1);
+        while (currentPlayers[nextPlayerIndex % currentPlayers.length]?.isFinished) {
+            nextPlayerIndex++;
+        }
+        
+        const nextPlayer = currentPlayers[nextPlayerIndex % currentPlayers.length];
+        if (nextPlayer) {
+            setCurrentPlayerId(nextPlayer.id);
+        }
+        return currentPlayers;
+    });
+}, [currentPlayerId]);
 
 
   const handleMove = useCallback((row: number, col: number) => {
@@ -151,50 +154,40 @@ export function GameBoard({
 
   // Effect for handling player logic (calculating moves, checking for finished players)
   useEffect(() => {
-    if (gameState !== 'playing' || !grid || !activePlayer) {
+    if (gameState !== 'playing' || !grid || !activePlayer || activePlayer.isFinished) {
       setPossibleMoves([]);
       return;
     }
 
+    const moves = getPossibleMoves(grid, activePlayer.position);
+
     if (activePlayer.type === 'cpu') {
-      setPossibleMoves([]); // Clear moves for CPU, they are calculated in their own effect
-      return;
+        setPossibleMoves([]); 
+        if (moves.length === 0) {
+            setPlayers(prev => prev.map(p => p.id === activePlayer.id ? { ...p, isFinished: true } : p));
+            advanceTurn();
+            return;
+        }
+
+        const timeoutId = setTimeout(() => {
+            const randomMove = moves[Math.floor(Math.random() * moves.length)];
+            if (randomMove) {
+                // Re-calculate possible moves for handleMove
+                setPossibleMoves(moves);
+                handleMove(randomMove.row, randomMove.col);
+            }
+        }, CPU_MOVE_DELAY);
+
+        return () => clearTimeout(timeoutId);
+    } else { // Human player
+        setPossibleMoves(moves);
+        if (moves.length === 0) {
+            setPlayers(prev => prev.map(p => p.id === activePlayer.id ? { ...p, isFinished: true } : p));
+            advanceTurn();
+        }
     }
-    
-    const moves = getPossibleMoves(grid, activePlayer.position);
-    setPossibleMoves(moves);
-    
-    if (moves.length === 0 && !activePlayer.isFinished) {
-      setPlayers(prev => prev.map(p => p.id === activePlayer.id ? { ...p, isFinished: true } : p));
-      advanceTurn();
-    }
-  }, [gameState, grid, activePlayer, advanceTurn]);
+  }, [gameState, grid, activePlayer, advanceTurn, handleMove]);
 
-  // Effect for handling CPU moves
-  useEffect(() => {
-    if (gameState !== 'playing' || !grid || !activePlayer || activePlayer.type !== 'cpu' ) {
-      return;
-    }
-
-    const moves = getPossibleMoves(grid, activePlayer.position);
-
-    if (moves.length === 0) {
-      if (!activePlayer.isFinished) {
-        setPlayers(prev => prev.map(p => p.id === activePlayer.id ? { ...p, isFinished: true } : p));
-        advanceTurn();
-      }
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      const randomMove = moves[Math.floor(Math.random() * moves.length)];
-      if (randomMove) {
-        handleMove(randomMove.row, randomMove.col);
-      }
-    }, CPU_MOVE_DELAY);
-
-    return () => clearTimeout(timeoutId);
-  }, [gameState, grid, activePlayer, handleMove, advanceTurn]);
 
   const gridStyle = useMemo(() => ({
       gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
