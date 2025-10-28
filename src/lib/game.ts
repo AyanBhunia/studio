@@ -14,57 +14,65 @@ export const generateGrid = (
   const ranks = ["A", ...Array.from({ length: size - 1 }, (_, i) => (i + 2).toString())];
   let grid: Grid;
   let players: Player[] = [];
-  let acePositions: PlayerPosition[] = [];
 
-  const createGridAndPlayers = () => {
-    const newGrid: Grid = Array.from({ length: size }, () =>
-      Array.from({ length: size }, () => {
-        const randomSuit = SUITS[Math.floor(Math.random() * SUITS.length)];
-        const randomRank = ranks[Math.floor(Math.random() * ranks.length)];
-        const card: Card = {
-          suit: randomSuit,
-          rank: randomRank,
-          value: getRankValue(randomRank),
-        };
-        return { card, isInvalid: false };
-      })
-    );
-
-    const newAcePositions: PlayerPosition[] = [];
-    newGrid.forEach((row, r) =>
-      row.forEach((cell, c) => {
-        if (cell.card.rank === "A") {
-          newAcePositions.push({ row: r, col: c });
-        }
-      })
-    );
-    
-    // Shuffle ace positions to ensure random assignment
-    for (let i = newAcePositions.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [newAcePositions[i], newAcePositions[j]] = [newAcePositions[j], newAcePositions[i]];
-    }
-
-    const newPlayers: Player[] = [];
-    if (newAcePositions.length >= playerCount) {
-      for (let i = 0; i < playerCount; i++) {
-        const position = newAcePositions[i];
-        newGrid[position.row][position.col].occupiedBy = i;
-        newPlayers.push({ id: i, position, isFinished: false, type: i === 0 ? 'human' : 'cpu' });
+  // Create all possible card combinations
+  const allCards: Card[] = [];
+  for (const suit of SUITS) {
+    for (const rank of ranks) {
+      // We need exactly size copies of each rank and suit
+      const copies = size / SUITS.length; // For size 4, this means 1 copy of each rank per suit
+      for (let i = 0; i < copies; i++) {
+        allCards.push({
+          suit,
+          rank,
+          value: getRankValue(rank)
+        });
       }
     }
-    
-    return { newGrid, newPlayers, newAcePositions };
-  };
-  
-  let attempt = createGridAndPlayers();
-  
-  while (attempt.newPlayers.length < playerCount) {
-      attempt = createGridAndPlayers();
   }
 
-  grid = attempt.newGrid;
-  players = attempt.newPlayers;
+  // Fisher-Yates shuffle the cards
+  for (let i = allCards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allCards[i], allCards[j]] = [allCards[j], allCards[i]];
+  }
+
+  // Create grid and fill with shuffled cards
+  grid = Array.from({ length: size }, (_, row) =>
+    Array.from({ length: size }, (_, col) => {
+      const cardIndex = row * size + col;
+      const card = allCards[cardIndex];
+      return { card, isInvalid: false };
+    })
+  );
+
+  // Find all Ace positions
+  const acePositions: PlayerPosition[] = [];
+  grid.forEach((row, r) =>
+    row.forEach((cell, c) => {
+      if (cell.card.rank === "A") {
+        acePositions.push({ row: r, col: c });
+      }
+    })
+  );
+
+  // Shuffle ace positions for random player placement
+  for (let i = acePositions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [acePositions[i], acePositions[j]] = [acePositions[j], acePositions[i]];
+  }
+
+  // Create players at shuffled ace positions
+  if (acePositions.length >= playerCount) {
+    for (let i = 0; i < playerCount; i++) {
+      const position = acePositions[i];
+      grid[position.row][position.col].occupiedBy = i;
+      players.push({ id: i, position, isFinished: false, type: i === 0 ? 'human' : 'cpu' });
+    }
+  } else {
+    // This case shouldn't happen with our new card distribution logic
+    throw new Error("Not enough Aces for player count");
+  }
 
   return { grid, players };
 };

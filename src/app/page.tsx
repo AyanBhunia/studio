@@ -15,6 +15,8 @@ export default function Home() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [winner, setWinner] = useState<Player | null>(null);
   const [gameState, setGameState] = useState<"loading" | "playing" | "gameOver">("loading");
+  const [cpuThought, setCpuThought] = useState<string>("");
+  const [debugInfo, setDebugInfo] = useState<string>("");
 
 
   const startNewGame = useCallback(() => {
@@ -35,6 +37,8 @@ export default function Home() {
         activePlayer={activePlayer}
         winner={winner}
         gameState={gameState}
+        cpuThought={cpuThought}
+        debugInfo={debugInfo}
       />
       <div 
         className="flex flex-1 items-center justify-center p-4 overflow-auto bg-cover bg-center"
@@ -49,6 +53,8 @@ export default function Home() {
           setActivePlayer={setActivePlayer}
           setWinner={setWinner}
           setGameState={setGameState}
+          setCpuThought={setCpuThought}
+          setDebugInfo={setDebugInfo}
         />
       </div>
     </main>

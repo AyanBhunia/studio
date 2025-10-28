@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
-const CPU_MOVE_DELAY = 1000;
+const CPU_MOVE_DELAY = 250;
 
 interface GameBoardProps {
   gridSize: number;
@@ -19,6 +19,8 @@ interface GameBoardProps {
   setActivePlayer: (player: Player | null) => void;
   setWinner: (player: Player | null) => void;
   setGameState: (gameState: "loading" | "playing" | "gameOver") => void;
+  setCpuThought?: (text: string) => void;
+  setDebugInfo?: (text: string) => void;
 }
 
 export function GameBoard({ 
@@ -29,6 +31,8 @@ export function GameBoard({
   setActivePlayer: setActivePlayerProp,
   setWinner: setWinnerProp,
   setGameState: setGameStateProp,
+  setCpuThought,
+  setDebugInfo,
 }: GameBoardProps) {
   const [grid, setGrid] = useState<Grid | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -37,11 +41,13 @@ export function GameBoard({
   const [gameState, setGameState] = useState<"loading" | "playing" | "gameOver">("loading");
   const [justMovedTo, setJustMovedTo] = useState<PlayerPosition | null>(null);
   const [winner, setWinner] = useState<Player | null>(null);
+  const [usedValues, setUsedValues] = useState<Set<number>>(new Set());
 
   const { toast } = useToast();
 
   useEffect(() => {
     setPlayersProp(players);
+    setDebugInfo?.(`players:${players.length} current:${currentPlayerId}`);
   }, [players, setPlayersProp]);
 
   useEffect(() => {
@@ -50,6 +56,7 @@ export function GameBoard({
 
   useEffect(() => {
     setGameStateProp(gameState);
+    setDebugInfo?.((prev => `state:${gameState}`));
   }, [gameState, setGameStateProp]);
 
   const activePlayer = useMemo(() => {
@@ -108,6 +115,13 @@ export function GameBoard({
         newGrid[oldPos.row][oldPos.col].isInvalid = true;
         delete newGrid[oldPos.row][oldPos.col].occupiedBy;
         newGrid[row][col].occupiedBy = activePlayer.id;
+        // record picked value globally
+        const pickedValue = newGrid[row][col].card.value;
+        setUsedValues(prev => {
+          const next = new Set(prev);
+          next.add(pickedValue);
+          return next;
+        });
         return newGrid;
       });
 
@@ -137,6 +151,12 @@ export function GameBoard({
       setPossibleMoves([]);
       setJustMovedTo(null);
       setWinner(null);
+      const initUsed = new Set<number>();
+      newPlayers.forEach((p) => {
+        const v = newGrid[p.position.row][p.position.col].card.value;
+        initUsed.add(v);
+      });
+      setUsedValues(initUsed);
       setGameState("playing");
     } catch (error) {
       console.error("Failed to start new game:", error);
@@ -153,13 +173,18 @@ export function GameBoard({
   }, [gridSize, playerCount, startNewGame]);
 
   // Effect for handling player logic (calculating moves, checking for finished players)
+  // Note: do not depend on `handleMove` here to avoid a feedback loop where
+  // setting `possibleMoves` changes `handleMove` identity and retriggers the effect.
   useEffect(() => {
     if (gameState !== 'playing' || !grid || !activePlayer || activePlayer.isFinished) {
       setPossibleMoves([]);
       return;
     }
 
-    const moves = getPossibleMoves(grid, activePlayer.position);
+    let moves = getPossibleMoves(grid, activePlayer.position);
+    // Disallow moving onto any card value that has already been picked globally
+    moves = moves.filter(m => !usedValues.has(grid[m.row][m.col].card.value));
+    setDebugInfo?.(`state:${gameState} grid:${grid.length}x${grid[0].length} current:${activePlayer.id} moves:${moves.length}`);
 
     if (activePlayer.type === 'cpu') {
         setPossibleMoves([]); 
@@ -169,12 +194,24 @@ export function GameBoard({
             return;
         }
 
+        // Simple heuristic: choose move that lands on highest-value card
+        const scored = moves.map(m => {
+          const cell = grid[m.row][m.col];
+          return { ...m, value: cell.card.value, card: cell.card };
+        });
+        const maxVal = Math.max(...scored.map(s => s.value));
+        const best = scored.filter(s => s.value === maxVal);
+        const choice = best[Math.floor(Math.random() * best.length)];
+
+        setCpuThought?.(
+          `${activePlayer.type.toUpperCase()} ${activePlayer.id + 1}: ${moves.length} moves; picking ${choice.card.rank} of ${choice.card.suit} (v${choice.value}) @ (${choice.row},${choice.col})`
+        );
+
         const timeoutId = setTimeout(() => {
-            const randomMove = moves[Math.floor(Math.random() * moves.length)];
-            if (randomMove) {
+            if (choice) {
                 // Re-calculate possible moves for handleMove
                 setPossibleMoves(moves);
-                handleMove(randomMove.row, randomMove.col);
+                handleMove(choice.row, choice.col);
             }
         }, CPU_MOVE_DELAY);
 
@@ -186,7 +223,7 @@ export function GameBoard({
             advanceTurn();
         }
     }
-  }, [gameState, grid, activePlayer, advanceTurn, handleMove]);
+  }, [gameState, grid, activePlayer, advanceTurn, usedValues]);
 
 
   const gridStyle = useMemo(() => ({

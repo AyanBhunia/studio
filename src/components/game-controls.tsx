@@ -27,6 +27,8 @@ interface GameControlsProps {
   activePlayer: Player | null;
   winner: Player | null;
   gameState: "loading" | "playing" | "gameOver";
+  cpuThought?: string;
+  debugInfo?: string;
 }
 
 export function GameControls({
@@ -40,7 +42,9 @@ export function GameControls({
   players,
   activePlayer,
   winner,
-  gameState
+  gameState,
+  cpuThought,
+  debugInfo
 }: GameControlsProps) {
   return (
     <Card className="flex w-full md:max-w-sm flex-col rounded-none border-0 md:border-r md:shadow-lg">
@@ -101,6 +105,14 @@ export function GameControls({
           <Button onClick={onNewGame} className="w-full">
             New Game
           </Button>
+          <div className="rounded-md border bg-background p-2 text-xs text-muted-foreground min-h-12">
+            <div className="font-bold text-foreground mb-1">CPU Thinking</div>
+            <div className="line-clamp-3 break-words">{cpuThought || "Idle"}</div>
+          </div>
+          <div className="rounded-md border bg-background p-2 text-xs text-muted-foreground min-h-12">
+            <div className="font-bold text-foreground mb-1">Debug</div>
+            <div className="line-clamp-4 break-words whitespace-pre-wrap">{debugInfo || "No data"}</div>
+          </div>
         </div>
       </CardContent>
     </Card>
