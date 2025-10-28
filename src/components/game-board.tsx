@@ -160,8 +160,8 @@ export function GameBoard() {
   const playerColors = ['text-yellow-400', 'text-blue-400', 'text-green-400', 'text-red-400'];
 
   return (
-    <div className="flex flex-col items-center gap-6">
-       <div className="w-full flex justify-around items-center mb-4 px-4 flex-wrap">
+    <div className="flex w-full flex-col items-center justify-center gap-4 p-2 md:p-4">
+       <div className="w-full flex justify-around items-center flex-wrap gap-2 md:gap-4 mb-2">
         {players.map(player => (
           <div key={player.id} className={cn(
               "flex items-center gap-2 p-2 rounded-lg transition-all",
@@ -179,7 +179,7 @@ export function GameBoard() {
         ))}
       </div>
       <div
-        className="relative grid w-full gap-2 sm:gap-4"
+        className="relative grid w-full max-w-2xl gap-1 sm:gap-2"
         style={gridStyle}
       >
         <AnimatePresence>
@@ -236,8 +236,8 @@ export function GameBoard() {
           )}
       </div>
 
-      <div className="mt-4 flex w-full flex-col items-stretch gap-4 rounded-lg border bg-card p-4 sm:flex-row sm:flex-wrap sm:justify-between">
-        <div className="flex w-full items-center gap-4 sm:w-auto">
+      <div className="flex w-full max-w-2xl flex-col items-stretch gap-4 rounded-lg border bg-card p-4 sm:flex-row sm:flex-wrap sm:justify-between">
+        <div className="flex flex-grow items-center gap-4">
           <Label htmlFor="grid-size-slider" className="whitespace-nowrap font-bold">
             Grid Size: {gridSize}x{gridSize}
           </Label>
@@ -251,7 +251,7 @@ export function GameBoard() {
             className="w-full sm:w-32"
           />
         </div>
-        <div className="flex w-full items-center gap-4 sm:w-auto">
+        <div className="flex items-center gap-4">
           <Label htmlFor="player-count" className="whitespace-nowrap font-bold flex items-center gap-2">
             <Users /> Players
           </Label>
@@ -265,7 +265,7 @@ export function GameBoard() {
             className="w-20"
           />
         </div>
-        <Button onClick={() => startNewGame(gridSize, playerCount)} className="w-full sm:w-auto">
+        <Button onClick={() => startNewGame(gridSize, playerCount)} className="w-full sm:w-auto flex-grow sm:flex-grow-0">
           New Game
         </Button>
       </div>
