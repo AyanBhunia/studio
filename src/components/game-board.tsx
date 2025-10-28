@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Crown, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const DEFAULT_GRID_SIZE = 5;
 const DEFAULT_PLAYER_COUNT = 1;
