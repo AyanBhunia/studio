@@ -77,13 +77,13 @@ export function PlayingCard({
       )}
       aria-label={`Card ${card.rank} of ${card.suit}. ${isPossibleMove ? "Possible move." : ""}`}
     >
-      <div className="absolute left-1 top-0 p-1 text-left font-bold sm:left-2 sm:top-1">
-        <div className="text-base leading-none sm:text-xl">{card.rank}</div>
-        <SuitIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+      <div className="absolute left-0.5 top-0 p-0.5 text-left font-bold sm:left-1 sm:top-0.5">
+        <div className="text-xs leading-none sm:text-base">{card.rank}</div>
+        <SuitIcon className="h-2 w-2 sm:h-3 sm:w-3" />
       </div>
-      <div className="absolute bottom-0 right-1 rotate-180 p-1 text-left font-bold sm:bottom-1 sm:right-2">
-        <div className="text-base leading-none sm:text-xl">{card.rank}</div>
-        <SuitIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+      <div className="absolute bottom-0 right-0.5 rotate-180 p-0.5 text-left font-bold sm:bottom-0.5 sm:right-1">
+        <div className="text-xs leading-none sm:text-base">{card.rank}</div>
+        <SuitIcon className="h-2 w-2 sm:h-3 sm:w-3" />
       </div>
 
       <div className="flex h-full w-full items-center justify-center">
