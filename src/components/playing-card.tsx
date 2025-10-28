@@ -45,7 +45,7 @@ export function PlayingCard({
 
   if (isInvalid) {
     return (
-      <div className="aspect-square w-full overflow-hidden rounded-md border-2 border-dashed border-muted-foreground/50 bg-muted/20">
+      <div className="aspect-[5/7] w-full overflow-hidden rounded-md border-2 border-dashed border-muted-foreground/50 bg-muted/20">
         {cardBack && (
           <Image
             src={cardBack.imageUrl}
@@ -65,7 +65,7 @@ export function PlayingCard({
       onClick={onClick}
       disabled={!isPossibleMove}
       className={cn(
-        "relative aspect-square w-full overflow-hidden rounded-md border-2 bg-card text-foreground shadow-md transition-all duration-300",
+        "relative aspect-[5/7] w-full overflow-hidden rounded-md border-2 bg-card text-foreground shadow-md transition-all duration-300",
         isRed ? "text-primary" : "text-foreground",
         isPossibleMove
           ? "cursor-pointer ring-4 ring-accent ring-offset-2 ring-offset-background hover:scale-105 hover:shadow-lg"

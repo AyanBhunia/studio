@@ -133,11 +133,14 @@ export function GameBoard() {
       return;
     }
 
-    if (activePlayer.type === 'cpu') return;
-
+    if (activePlayer.type === 'cpu') {
+      setPossibleMoves([]); // Clear moves for CPU, they are calculated in their own effect
+      return;
+    }
+    
     const moves = getPossibleMoves(grid, activePlayer.position);
     setPossibleMoves(moves);
-
+    
     if (moves.length === 0 && !activePlayer.isFinished) {
       setPlayers(prev => prev.map(p => p.id === activePlayer.id ? { ...p, isFinished: true } : p));
       advanceTurn();
@@ -151,20 +154,19 @@ export function GameBoard() {
     }
 
     const moves = getPossibleMoves(grid, activePlayer.position);
-    setPossibleMoves(moves);
 
-    if (moves.length === 0 && !activePlayer.isFinished) {
+    if (moves.length === 0) {
+      if (!activePlayer.isFinished) {
         setPlayers(prev => prev.map(p => p.id === activePlayer.id ? { ...p, isFinished: true } : p));
         advanceTurn();
-        return;
+      }
+      return;
     }
 
     const timeoutId = setTimeout(() => {
-      if (moves.length > 0) {
-        const randomMove = moves[Math.floor(Math.random() * moves.length)];
-        if (randomMove) {
-          handleMove(randomMove.row, randomMove.col);
-        }
+      const randomMove = moves[Math.floor(Math.random() * moves.length)];
+      if (randomMove) {
+        handleMove(randomMove.row, randomMove.col);
       }
     }, CPU_MOVE_DELAY);
 
@@ -196,9 +198,9 @@ export function GameBoard() {
           </div>
         ))}
       </div>
-      <div className="flex-1 w-full flex items-center justify-center min-h-0">
+       <div className="flex-1 w-full flex items-center justify-center p-2 min-h-0">
         <div
-            className="relative grid aspect-square w-full max-w-[min(90vw,80vh)] gap-2"
+            className="relative grid w-full max-w-[min(90vw,80vh)] gap-2"
             style={gridStyle}
         >
             <AnimatePresence>
