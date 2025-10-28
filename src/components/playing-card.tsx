@@ -12,9 +12,11 @@ interface PlayingCardProps {
   card: Card;
   isInvalid: boolean;
   isKingHere: boolean;
+  kingColor?: string;
   isPossibleMove: boolean;
   onClick: () => void;
   justMovedTo: boolean;
+  isCurrentPlayerTurn: boolean;
 }
 
 const suitIcons: Record<Suit, React.ComponentType<{ className?: string }>> = {
@@ -28,9 +30,11 @@ export function PlayingCard({
   card,
   isInvalid,
   isKingHere,
+  kingColor = 'text-yellow-400',
   isPossibleMove,
   onClick,
   justMovedTo,
+  isCurrentPlayerTurn,
 }: PlayingCardProps) {
   const cardBack = PlaceHolderImages.find((img) => img.id === "card-back");
   const SuitIcon = suitIcons[card.suit];
@@ -64,7 +68,9 @@ export function PlayingCard({
           ? "cursor-pointer ring-4 ring-accent ring-offset-2 ring-offset-background hover:scale-105 hover:shadow-lg"
           : "cursor-default",
         isKingHere ? "shadow-2xl" : "",
-        justMovedTo ? "animate-pulse" : ""
+        justMovedTo ? "animate-pulse" : "",
+        isCurrentPlayerTurn && "ring-4 ring-offset-2 ring-offset-background",
+        isCurrentPlayerTurn && isPossibleMove ? "ring-accent" : isCurrentPlayerTurn ? "ring-primary/50" : ""
       )}
       aria-label={`Card ${card.rank} of ${card.suit}. ${isPossibleMove ? "Possible move." : ""}`}
     >
@@ -88,7 +94,7 @@ export function PlayingCard({
 
       {isKingHere && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-          <Crown className="h-1/2 w-1/2 text-yellow-400 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]" />
+          <Crown className={cn("h-1/2 w-1/2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]", kingColor)} />
         </div>
       )}
     </motion.button>

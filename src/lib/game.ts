@@ -1,4 +1,4 @@
-import type { Grid, Card, Suit, PlayerPosition } from "./types";
+import type { Grid, Card, Suit, PlayerPosition, Player } from "./types";
 
 const SUITS: Suit[] = ["spades", "hearts", "diamonds", "clubs"];
 
@@ -8,19 +8,17 @@ export const getRankValue = (rank: string): number => {
 };
 
 export const generateGrid = (
-  size: number
-): { grid: Grid; playerPosition: PlayerPosition } => {
+  size: number,
+  playerCount: number
+): { grid: Grid; players: Player[] } => {
   const ranks = ["A", ...Array.from({ length: size - 1 }, (_, i) => (i + 2).toString())];
-  let grid: Grid = [];
+  let grid: Grid;
+  let players: Player[] = [];
   let acePositions: PlayerPosition[] = [];
 
-  // This function generates a grid and ensures at least one 'A' card is present.
-  const createGridAttempt = () => {
-    const newGrid: Grid = [];
-    const newAcePositions: PlayerPosition[] = [];
-    for (let i = 0; i < size; i++) {
-      newGrid[i] = [];
-      for (let j = 0; j < size; j++) {
+  const createGridAndPlayers = () => {
+    const newGrid: Grid = Array.from({ length: size }, () =>
+      Array.from({ length: size }, () => {
         const randomSuit = SUITS[Math.floor(Math.random() * SUITS.length)];
         const randomRank = ranks[Math.floor(Math.random() * ranks.length)];
         const card: Card = {
@@ -28,30 +26,47 @@ export const generateGrid = (
           rank: randomRank,
           value: getRankValue(randomRank),
         };
-        newGrid[i][j] = { card, isInvalid: false };
-        if (card.rank === "A") {
-          newAcePositions.push({ row: i, col: j });
+        return { card, isInvalid: false };
+      })
+    );
+
+    const newAcePositions: PlayerPosition[] = [];
+    newGrid.forEach((row, r) =>
+      row.forEach((cell, c) => {
+        if (cell.card.rank === "A") {
+          newAcePositions.push({ row: r, col: c });
         }
+      })
+    );
+    
+    // Shuffle ace positions to ensure random assignment
+    for (let i = newAcePositions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newAcePositions[i], newAcePositions[j]] = [newAcePositions[j], newAcePositions[i]];
+    }
+
+    const newPlayers: Player[] = [];
+    if (newAcePositions.length >= playerCount) {
+      for (let i = 0; i < playerCount; i++) {
+        const position = newAcePositions[i];
+        newGrid[position.row][position.col].occupiedBy = i;
+        newPlayers.push({ id: i, position, isFinished: false });
       }
     }
-    return { newGrid, newAcePositions };
+    
+    return { newGrid, newPlayers, newAcePositions };
   };
-
-  let attempt = createGridAttempt();
-  grid = attempt.newGrid;
-  acePositions = attempt.newAcePositions;
-
-  // In the unlikely event no 'A' is generated, retry.
-  while (acePositions.length === 0) {
-    attempt = createGridAttempt();
-    grid = attempt.newGrid;
-    acePositions = attempt.newAcePositions;
+  
+  let attempt = createGridAndPlayers();
+  
+  while (attempt.newPlayers.length < playerCount) {
+      attempt = createGridAndPlayers();
   }
 
-  const playerPosition =
-    acePositions[Math.floor(Math.random() * acePositions.length)];
+  grid = attempt.newGrid;
+  players = attempt.newPlayers;
 
-  return { grid, playerPosition };
+  return { grid, players };
 };
 
 export const getPossibleMoves = (
@@ -60,24 +75,30 @@ export const getPossibleMoves = (
 ): PlayerPosition[] => {
   const { row, col } = position;
   if (!grid[row] || !grid[row][col]) return [];
+  
+  const currentCell = grid[row][col];
+  if(currentCell.isInvalid) return [];
 
-  const maxDist = grid[row][col].card.value;
+  const maxDist = currentCell.card.value;
   const size = grid.length;
   const moveSet = new Set<string>();
 
-  for (let dist = 1; dist <= maxDist; dist++) {
-    const targets: PlayerPosition[] = [
-      { row: row, col: (col + dist + size * dist) % size }, // Right
-      { row: row, col: (col - dist + size * dist) % size }, // Left
-      { row: (row + dist + size * dist) % size, col: col }, // Down
-      { row: (row - dist + size * dist) % size, col: col }, // Up
-    ];
+  const directions = [
+    { dr: 0, dc: 1 }, // Right
+    { dr: 0, dc: -1 }, // Left
+    { dr: 1, dc: 0 }, // Down
+    { dr: -1, dc: 0 }, // Up
+  ];
 
-    for (const target of targets) {
-      if (!grid[target.row][target.col].isInvalid) {
-        moveSet.add(JSON.stringify(target));
+  for (const {dr, dc} of directions) {
+      for (let dist = 1; dist <= maxDist; dist++) {
+          const newRow = (row + dr * dist + size) % size;
+          const newCol = (col + dc * dist + size) % size;
+          
+          if (!grid[newRow][newCol].isInvalid) {
+              moveSet.add(JSON.stringify({ row: newRow, col: newCol }));
+          }
       }
-    }
   }
 
   return Array.from(moveSet).map((m) => JSON.parse(m));

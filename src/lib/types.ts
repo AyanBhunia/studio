@@ -11,9 +11,16 @@ export interface PlayerPosition {
   col: number;
 }
 
+export interface Player {
+  id: number;
+  position: PlayerPosition;
+  isFinished: boolean;
+}
+
 export interface Cell {
   card: Card;
   isInvalid: boolean;
+  occupiedBy?: number;
 }
 
 export type Grid = Cell[][];
