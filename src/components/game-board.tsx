@@ -149,7 +149,8 @@ export function GameBoard() {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [gameState, grid, activePlayer, handleMove, advanceTurn]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState, grid, activePlayer]);
 
 
   const gridStyle = useMemo(() => ({
