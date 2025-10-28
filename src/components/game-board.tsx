@@ -160,9 +160,11 @@ export function GameBoard() {
     }
 
     const timeoutId = setTimeout(() => {
-      const randomMove = moves[Math.floor(Math.random() * moves.length)];
-      if (randomMove) {
-        handleMove(randomMove.row, randomMove.col);
+      if (moves.length > 0) {
+        const randomMove = moves[Math.floor(Math.random() * moves.length)];
+        if (randomMove) {
+          handleMove(randomMove.row, randomMove.col);
+        }
       }
     }, CPU_MOVE_DELAY);
 
@@ -196,7 +198,7 @@ export function GameBoard() {
       </div>
       <div className="flex-1 w-full flex items-center justify-center p-2 min-h-0">
         <div
-            className="relative grid aspect-square w-full max-w-[min(90vw,90vh)] gap-1 sm:gap-2"
+            className="relative grid aspect-square w-full max-w-[min(90vw,80vh)] gap-1"
             style={gridStyle}
         >
             <AnimatePresence>
