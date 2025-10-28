@@ -50,7 +50,7 @@ export const generateGrid = (
       for (let i = 0; i < playerCount; i++) {
         const position = newAcePositions[i];
         newGrid[position.row][position.col].occupiedBy = i;
-        newPlayers.push({ id: i, position, isFinished: false });
+        newPlayers.push({ id: i, position, isFinished: false, type: i === 0 ? 'human' : 'cpu' });
       }
     }
     
@@ -95,7 +95,7 @@ export const getPossibleMoves = (
           const newRow = (row + dr * dist + size) % size;
           const newCol = (col + dc * dist + size) % size;
           
-          if (!grid[newRow][newCol].isInvalid) {
+          if (!grid[newRow][newCol].isInvalid && grid[newRow][newCol].occupiedBy === undefined) {
               moveSet.add(JSON.stringify({ row: newRow, col: newCol }));
           }
       }

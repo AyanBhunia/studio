@@ -3,7 +3,7 @@
 import type { Card, Suit } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ClubIcon, DiamondIcon, HeartIcon, SpadeIcon } from "./icons";
-import { Crown } from "lucide-react";
+import { Crown, Bot } from "lucide-react";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { motion } from "framer-motion";
@@ -17,6 +17,7 @@ interface PlayingCardProps {
   onClick: () => void;
   justMovedTo: boolean;
   isCurrentPlayerTurn: boolean;
+  playerType?: 'human' | 'cpu';
 }
 
 const suitIcons: Record<Suit, React.ComponentType<{ className?: string }>> = {
@@ -35,6 +36,7 @@ export function PlayingCard({
   onClick,
   justMovedTo,
   isCurrentPlayerTurn,
+  playerType,
 }: PlayingCardProps) {
   const cardBack = PlaceHolderImages.find((img) => img.id === "card-back");
   const SuitIcon = suitIcons[card.suit];
@@ -94,7 +96,11 @@ export function PlayingCard({
 
       {isKingHere && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-          <Crown className={cn("h-1/2 w-1/2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]", kingColor)} />
+          {playerType === 'cpu' ? (
+            <Bot className={cn("h-1/2 w-1/2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]", kingColor)} />
+          ) : (
+            <Crown className={cn("h-1/2 w-1/2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]", kingColor)} />
+          )}
         </div>
       )}
     </motion.button>

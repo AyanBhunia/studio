@@ -15,6 +15,7 @@ export interface Player {
   id: number;
   position: PlayerPosition;
   isFinished: boolean;
+  type: 'human' | 'cpu';
 }
 
 export interface Cell {

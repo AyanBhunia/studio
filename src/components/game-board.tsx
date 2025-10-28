@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Users } from "lucide-react";
+import { Crown, Users, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_GRID_SIZE = 5;
-const DEFAULT_PLAYER_COUNT = 1;
+const DEFAULT_PLAYER_COUNT = 2; // Default to 1 CPU player
+const CPU_MOVE_DELAY = 1000; // 1 second delay for CPU move
 
 export function GameBoard() {
   const [gridSize, setGridSize] = useState(DEFAULT_GRID_SIZE);
@@ -70,31 +71,7 @@ export function GameBoard() {
     return players.find(p => p.id === currentPlayerId);
   }, [players, currentPlayerId]);
 
-  useEffect(() => {
-    if (grid && activePlayer && !activePlayer.isFinished && gameState === 'playing') {
-      const moves = getPossibleMoves(grid, activePlayer.position);
-      setPossibleMoves(moves);
-      if (moves.length === 0) {
-        setPlayers(prev => prev.map(p => p.id === activePlayer.id ? {...p, isFinished: true} : p));
-      }
-    }
-  }, [grid, activePlayer, gameState]);
-
-  useEffect(() => {
-    const activePlayers = players.filter(p => !p.isFinished);
-    if (gameState === 'playing' && players.length > 0 && activePlayers.length <= 1) {
-        setWinner(activePlayers[0] || players[currentPlayerId]);
-        setGameState("gameOver");
-    } else {
-        const nextPlayer = players.find(p => p.id > currentPlayerId && !p.isFinished) || players.find(p => !p.isFinished);
-        if (nextPlayer) {
-            setCurrentPlayerId(nextPlayer.id);
-        }
-    }
-  }, [players, gameState, currentPlayerId]);
-
-
-  const handleMove = (row: number, col: number) => {
+  const handleMove = useCallback((row: number, col: number) => {
     if (gameState !== "playing" || !activePlayer || activePlayer.isFinished) return;
 
     const isPossible = possibleMoves.some(
@@ -119,8 +96,46 @@ export function GameBoard() {
       setJustMovedTo({ row, col });
       setTimeout(() => setJustMovedTo(null), 500); // Reset pulse animation
     }
-  };
-  
+  }, [gameState, activePlayer, grid, possibleMoves]);
+
+  useEffect(() => {
+    if (grid && activePlayer && !activePlayer.isFinished && gameState === 'playing') {
+      const moves = getPossibleMoves(grid, activePlayer.position);
+      setPossibleMoves(moves);
+
+      if (moves.length === 0) {
+        setPlayers(prev => prev.map(p => p.id === activePlayer.id ? {...p, isFinished: true} : p));
+        return; // Skip CPU move if player is finished
+      }
+
+      if (activePlayer.type === 'cpu') {
+        setTimeout(() => {
+            const randomMove = moves[Math.floor(Math.random() * moves.length)];
+            if (randomMove) {
+                handleMove(randomMove.row, randomMove.col);
+            }
+        }, CPU_MOVE_DELAY);
+      }
+    }
+  }, [grid, activePlayer, gameState, handleMove]);
+
+  useEffect(() => {
+    const activePlayers = players.filter(p => !p.isFinished);
+    if (gameState === 'playing' && players.length > 0 && activePlayers.length <= 1) {
+        setWinner(activePlayers[0] || players.find(p => p.id === currentPlayerId) || null);
+        setGameState("gameOver");
+    } else {
+        const currentPlayerIndex = players.findIndex(p => p.id === currentPlayerId);
+        let nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+        while(players[nextPlayerIndex]?.isFinished) {
+            nextPlayerIndex = (nextPlayerIndex + 1) % players.length;
+        }
+        if(players[nextPlayerIndex]) {
+            setCurrentPlayerId(players[nextPlayerIndex].id);
+        }
+    }
+  }, [players, gameState, currentPlayerId]);
+
   const gridStyle = useMemo(() => ({
       gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
   }), [gridSize]);
@@ -129,14 +144,20 @@ export function GameBoard() {
 
   return (
     <div className="flex flex-col items-center gap-6">
-       <div className="w-full flex justify-between items-center mb-4 px-4">
+       <div className="w-full flex justify-around items-center mb-4 px-4 flex-wrap">
         {players.map(player => (
           <div key={player.id} className={cn(
               "flex items-center gap-2 p-2 rounded-lg transition-all",
               player.id === currentPlayerId && !player.isFinished && "bg-primary/10 ring-2 ring-primary"
           )}>
-            <Crown className={cn(playerColors[player.id % playerColors.length], player.isFinished && "opacity-30")} />
-            <span className={cn("font-bold", player.isFinished && "line-through text-muted-foreground")}>Player {player.id + 1}</span>
+            {player.type === 'human' ? (
+                <Crown className={cn(playerColors[player.id % playerColors.length], player.isFinished && "opacity-30")} />
+            ) : (
+                <Bot className={cn(playerColors[player.id % playerColors.length], player.isFinished && "opacity-30")} />
+            )}
+            <span className={cn("font-bold", player.isFinished && "line-through text-muted-foreground")}>
+              {player.type === 'human' ? 'Player 1' : `CPU ${player.id}`}
+            </span>
           </div>
         ))}
       </div>
@@ -154,7 +175,7 @@ export function GameBoard() {
             >
               <div className="transform-gpu rounded-lg bg-card p-6 text-center shadow-xl ring-1 ring-border">
                 <h2 className="font-headline text-3xl font-bold text-primary">
-                  Player {winner.id + 1} Wins!
+                  {winner.type === 'human' ? `Player ${winner.id + 1} Wins!` : `CPU ${winner.id} Wins!`}
                 </h2>
                 <p className="mt-2 text-card-foreground">
                   Congratulations on being the last king standing.
@@ -172,12 +193,13 @@ export function GameBoard() {
             row.map((cell, colIndex) => {
               const kingPlayer = players.find(p => p.position.row === rowIndex && p.position.col === colIndex);
               const isKingHere = !!kingPlayer;
-              const isCurrentPlayerKing = kingPlayer?.id === currentPlayerId;
 
               const isPossible = possibleMoves.some(
                 (move) => move.row === rowIndex && move.col === colIndex
               );
               const movedTo = justMovedTo?.row === rowIndex && justMovedTo?.col === colIndex;
+
+              const isHumanPlayerTurn = activePlayer?.type === 'human';
 
               return (
                 <PlayingCard
@@ -186,10 +208,11 @@ export function GameBoard() {
                   isInvalid={cell.isInvalid}
                   isKingHere={isKingHere}
                   kingColor={isKingHere ? playerColors[kingPlayer.id % playerColors.length] : undefined}
-                  isPossibleMove={isPossible}
+                  isPossibleMove={isPossible && isHumanPlayerTurn}
                   justMovedTo={movedTo}
-                  onClick={() => handleMove(rowIndex, colIndex)}
-                  isCurrentPlayerTurn={isKingHere && isCurrentPlayerKing}
+                  onClick={() => isHumanPlayerTurn && handleMove(rowIndex, colIndex)}
+                  isCurrentPlayerTurn={isKingHere && kingPlayer.id === currentPlayerId}
+                  playerType={kingPlayer?.type}
                 />
               );
             })
@@ -213,7 +236,7 @@ export function GameBoard() {
         </div>
         <div className="flex w-full items-center gap-4 sm:w-auto">
           <Label htmlFor="player-count" className="whitespace-nowrap font-bold flex items-center gap-2">
-            <Users /> Kings
+            <Users /> Players
           </Label>
           <Input
             id="player-count"
