@@ -69,21 +69,24 @@ export function GameBoard() {
   }, [toast]);
 
   const advanceTurn = useCallback(() => {
-    const activePlayers = players.filter(p => !p.isFinished);
-    if (activePlayers.length <= 1) {
-      setWinner(activePlayers[0] || players.find(p => p.id === currentPlayerId) || null);
-      setGameState("gameOver");
-      return;
-    }
-
-    const currentPlayerIndex = players.findIndex(p => p.id === currentPlayerId);
-    let nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
-    while (players[nextPlayerIndex]?.isFinished) {
-      nextPlayerIndex = (nextPlayerIndex + 1) % players.length;
-    }
-    if (players[nextPlayerIndex]) {
-      setCurrentPlayerId(players[nextPlayerIndex].id);
-    }
+    setPlayers(currentPlayers => {
+        const activePlayers = currentPlayers.filter(p => !p.isFinished);
+        if (activePlayers.length <= 1) {
+          setWinner(activePlayers[0] || currentPlayers.find(p => p.id === currentPlayerId) || null);
+          setGameState("gameOver");
+          return currentPlayers;
+        }
+    
+        const currentPlayerIndex = currentPlayers.findIndex(p => p.id === currentPlayerId);
+        let nextPlayerIndex = (currentPlayerIndex + 1) % currentPlayers.length;
+        while (currentPlayers[nextPlayerIndex]?.isFinished) {
+          nextPlayerIndex = (nextPlayerIndex + 1) % currentPlayers.length;
+        }
+        if (currentPlayers[nextPlayerIndex]) {
+          setCurrentPlayerId(currentPlayers[nextPlayerIndex].id);
+        }
+        return currentPlayers;
+    });
   }, [players, currentPlayerId]);
 
   const handleMove = useCallback((row: number, col: number) => {
@@ -94,27 +97,27 @@ export function GameBoard() {
     );
   
     if (isPossible) {
-      setPlayers(prevPlayers => {
-        const newPlayers = prevPlayers.map(p => 
+      const oldPos = activePlayer.position;
+      
+      setPlayers(prevPlayers => 
+        prevPlayers.map(p => 
           p.id === activePlayer.id ? { ...p, position: { row, col } } : p
-        );
+        )
+      );
   
-        setGrid(prevGrid => {
-          if (!prevGrid) return null;
-          const newGrid = prevGrid.map((r) => r.map((c) => ({ ...c })));
-          const oldPos = activePlayer.position;
-          newGrid[oldPos.row][oldPos.col].isInvalid = true;
-          delete newGrid[oldPos.row][oldPos.col].occupiedBy;
-          newGrid[row][col].occupiedBy = activePlayer.id;
-          return newGrid;
-        });
-  
-        setJustMovedTo({ row, col });
-        setTimeout(() => setJustMovedTo(null), 500);
-        
-        advanceTurn();
-        return newPlayers;
+      setGrid(prevGrid => {
+        if (!prevGrid) return null;
+        const newGrid = prevGrid.map((r) => r.map((c) => ({ ...c })));
+        newGrid[oldPos.row][oldPos.col].isInvalid = true;
+        delete newGrid[oldPos.row][oldPos.col].occupiedBy;
+        newGrid[row][col].occupiedBy = activePlayer.id;
+        return newGrid;
       });
+
+      setJustMovedTo({ row, col });
+      setTimeout(() => setJustMovedTo(null), 500);
+      
+      advanceTurn();
     }
   }, [gameState, activePlayer, possibleMoves, advanceTurn]);
 
@@ -124,6 +127,7 @@ export function GameBoard() {
 
   useEffect(() => {
     if (gameState !== 'playing' || !grid || !activePlayer) {
+      setPossibleMoves([]);
       return;
     }
 
@@ -175,7 +179,7 @@ export function GameBoard() {
       </div>
       <div className="flex-1 w-full flex items-center justify-center p-2 min-h-0">
         <div
-            className="relative grid aspect-square max-h-full max-w-full"
+            className="relative grid aspect-square w-full max-w-full max-h-full"
             style={gridStyle}
         >
             <AnimatePresence>
