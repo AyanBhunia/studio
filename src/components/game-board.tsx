@@ -6,21 +6,30 @@ import { generateGrid, getPossibleMoves } from "@/lib/game";
 import type { Grid, Player, PlayerPosition } from "@/lib/types";
 import { PlayingCard } from "./playing-card";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Crown, Users, Bot } from "lucide-react";
-import { cn } from "@/lib/utils";
 
-const DEFAULT_GRID_SIZE = 5;
-const DEFAULT_PLAYER_COUNT = 2;
 const CPU_MOVE_DELAY = 1000;
 
-export function GameBoard() {
-  const [gridSize, setGridSize] = useState(DEFAULT_GRID_SIZE);
-  const [playerCount, setPlayerCount] = useState(DEFAULT_PLAYER_COUNT);
+interface GameBoardProps {
+  gridSize: number;
+  playerCount: number;
+  cardSize: number;
+  setPlayers: (players: Player[]) => void;
+  setActivePlayer: (player: Player | null) => void;
+  setWinner: (player: Player | null) => void;
+  setGameState: (gameState: "loading" | "playing" | "gameOver") => void;
+}
+
+export function GameBoard({ 
+  gridSize, 
+  playerCount, 
+  cardSize,
+  setPlayers: setPlayersProp,
+  setActivePlayer: setActivePlayerProp,
+  setWinner: setWinnerProp,
+  setGameState: setGameStateProp,
+}: GameBoardProps) {
   const [grid, setGrid] = useState<Grid | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentPlayerId, setCurrentPlayerId] = useState(0);
@@ -28,18 +37,32 @@ export function GameBoard() {
   const [gameState, setGameState] = useState<"loading" | "playing" | "gameOver">("loading");
   const [justMovedTo, setJustMovedTo] = useState<PlayerPosition | null>(null);
   const [winner, setWinner] = useState<Player | null>(null);
-  const [cardSize, setCardSize] = useState(100);
 
   const { toast } = useToast();
 
+  useEffect(() => {
+    setPlayersProp(players);
+  }, [players, setPlayersProp]);
+
+  useEffect(() => {
+    setWinnerProp(winner);
+  }, [winner, setWinnerProp]);
+
+  useEffect(() => {
+    setGameStateProp(gameState);
+  }, [gameState, setGameStateProp]);
+
   const activePlayer = useMemo(() => {
-    return players.find((p) => p.id === currentPlayerId);
-  }, [players, currentPlayerId]);
+    const player = players.find((p) => p.id === currentPlayerId);
+    setActivePlayerProp(player || null);
+    return player;
+  }, [players, currentPlayerId, setActivePlayerProp]);
 
   const advanceTurn = useCallback(() => {
     const activePlayers = players.filter(p => !p.isFinished);
     if (activePlayers.length <= 1) {
-      setWinner(activePlayers[0] || players.find(p => p.id === currentPlayerId) || null);
+      const winnerPlayer = activePlayers[0] || players.find(p => p.id === currentPlayerId) || null;
+      setWinner(winnerPlayer);
       setGameState("gameOver");
       return;
     }
@@ -109,10 +132,6 @@ export function GameBoard() {
       setJustMovedTo(null);
       setWinner(null);
       setGameState("playing");
-      toast({
-        title: "New Game Started",
-        description: `A new ${size}x${size} grid with ${numPlayers} player(s) has been generated. Good luck!`,
-      });
     } catch (error) {
       console.error("Failed to start new game:", error);
       toast({
@@ -125,7 +144,7 @@ export function GameBoard() {
 
   useEffect(() => {
     startNewGame(gridSize, playerCount);
-  }, []);
+  }, [gridSize, playerCount, startNewGame]);
 
   // Effect for handling player logic (calculating moves, checking for finished players)
   useEffect(() => {
@@ -176,35 +195,18 @@ export function GameBoard() {
 
   const gridStyle = useMemo(() => ({
       gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
+      gap: '0.5rem',
   }), [gridSize]);
 
-  const playerColors = ['text-yellow-400', 'text-blue-400', 'text-green-400', 'text-red-400'];
-
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-4 p-4">
-      <div className="w-full flex justify-around items-center flex-wrap gap-2 md:gap-4 mb-2 px-4">
-        {players.map(player => (
-          <div key={player.id} className={cn(
-              "flex items-center gap-2 p-2 rounded-lg transition-all",
-              player.id === currentPlayerId && !player.isFinished && "bg-primary/10 ring-2 ring-primary"
-          )}>
-            {player.type === 'human' ? (
-                <Crown className={cn(playerColors[player.id % playerColors.length], player.isFinished && "opacity-30")} />
-            ) : (
-                <Bot className={cn(playerColors[player.id % playerColors.length], player.isFinished && "opacity-30")} />
-            )}
-            <span className={cn("font-bold", player.isFinished && "line-through text-muted-foreground")}>
-              {player.type === 'human' ? 'Player 1' : `CPU ${player.id + 1}`}
-            </span>
-          </div>
-        ))}
-      </div>
+    <div className="flex h-full w-full flex-col items-center justify-center">
       <div className="flex-1 w-full flex items-center justify-center p-2 min-h-0">
         <div
-            className="relative grid aspect-[5/7] w-full max-w-[min(90vw,80vh)] gap-2"
+            className="relative grid aspect-[5/7] w-full"
             style={{
                 ...gridStyle,
-                maxWidth: `min(calc(90vw * ${cardSize / 100}), calc(80vh * ${cardSize / 100}))`
+                maxWidth: `calc((${cardSize} / 100) * (80vh * (5/7)))`,
+                maxHeight: `calc((${cardSize} / 100) * 80vh)`
             }}
         >
             <AnimatePresence>
@@ -261,55 +263,8 @@ export function GameBoard() {
             )}
         </div>
       </div>
-
-
-      <div className="flex w-full max-w-2xl flex-col items-stretch gap-4 rounded-lg border bg-card p-4 sm:flex-row sm:flex-wrap sm:justify-between">
-        <div className="flex flex-grow items-center gap-4">
-          <Label htmlFor="grid-size-slider" className="whitespace-nowrap font-bold">
-            Grid Size: {gridSize}x{gridSize}
-          </Label>
-          <Slider
-            id="grid-size-slider"
-            min={4}
-            max={8}
-            step={1}
-            value={[gridSize]}
-            onValueChange={(value) => setGridSize(value[0])}
-            className="w-full sm:w-32"
-          />
-        </div>
-        <div className="flex items-center gap-4">
-          <Label htmlFor="player-count" className="whitespace-nowrap font-bold flex items-center gap-2">
-            <Users /> Players
-          </Label>
-          <Input
-            id="player-count"
-            type="number"
-            min={1}
-            max={4}
-            value={playerCount}
-            onChange={(e) => setPlayerCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
-            className="w-20"
-          />
-        </div>
-        <div className="flex flex-grow items-center gap-4">
-          <Label htmlFor="card-size-slider" className="whitespace-nowrap font-bold">
-            Card Size: {cardSize}%
-          </Label>
-          <Slider
-            id="card-size-slider"
-            min={20}
-            max={100}
-            step={5}
-            value={[cardSize]}
-            onValueChange={(value) => setCardSize(value[0])}
-            className="w-full sm:w-32"
-          />
-        </div>
-        <Button onClick={() => startNewGame(gridSize, playerCount)} className="w-full sm:w-auto flex-grow sm:flex-grow-0">
-          New Game
-        </Button>
-      </div>
     </div>
   );
 }
+
+const playerColors = ['text-yellow-400', 'text-blue-400', 'text-green-400', 'text-red-400'];
