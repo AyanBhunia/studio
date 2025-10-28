@@ -21,11 +21,11 @@ interface PlayingCardProps {
   playerType?: 'human' | 'cpu';
 }
 
-const suitIcons: Record<Suit, React.ComponentType<{ className?: string }>> = {
-  hearts: HeartIcon,
-  diamonds: DiamondIcon,
-  spades: SpadeIcon,
-  clubs: ClubIcon,
+const suitConfig: Record<Suit, { icon: React.ComponentType<{ className?: string }>, color: string }> = {
+  hearts: { icon: HeartIcon, color: "text-[#F7DAE5]" },
+  diamonds: { icon: DiamondIcon, color: "text-[#C3E2E6]" },
+  clubs: { icon: ClubIcon, color: "text-[#B3DDC4]" },
+  spades: { icon: SpadeIcon, color: "text-[#D0CCE0]" },
 };
 
 export function PlayingCard({
@@ -40,9 +40,8 @@ export function PlayingCard({
   playerType,
 }: PlayingCardProps) {
   const cardBack = PlaceHolderImages.find((img) => img.id === "card-back");
-  const SuitIcon = suitIcons[card.suit];
-  const isRed = card.suit === "hearts" || card.suit === "diamonds";
-
+  const { icon: SuitIcon, color: suitColor } = suitConfig[card.suit];
+  
   if (isInvalid) {
     return (
       <div className="aspect-[5/7] w-full overflow-hidden rounded-md border-2 border-dashed border-muted-foreground/50 bg-muted/20">
@@ -66,7 +65,7 @@ export function PlayingCard({
       disabled={!isPossibleMove}
       className={cn(
         "relative aspect-[5/7] w-full overflow-hidden rounded-md border-2 bg-card text-foreground shadow-md transition-all duration-300",
-        isRed ? "text-primary" : "text-foreground",
+        suitColor,
         isPossibleMove
           ? "cursor-pointer ring-4 ring-accent ring-offset-2 ring-offset-background hover:scale-105 hover:shadow-lg"
           : "cursor-default",
@@ -77,22 +76,20 @@ export function PlayingCard({
       )}
       aria-label={`Card ${card.rank} of ${card.suit}. ${isPossibleMove ? "Possible move." : ""}`}
     >
-      <div className="absolute left-0.5 top-0 p-0.5 text-left font-bold sm:left-1 sm:top-0.5">
-        <SuitIcon className="h-2 w-2 sm:h-3 sm:w-3" />
+       <div className="absolute left-0.5 top-0.5 p-0.5 text-left font-bold sm:left-1 sm:top-1 text-base sm:text-lg md:text-xl">
+        {card.rank}
       </div>
-      <div className="absolute bottom-0 right-0.5 rotate-180 p-0.5 text-left font-bold sm:bottom-0.5 sm:right-1">
-        <SuitIcon className="h-2 w-2 sm:h-3 sm:w-3" />
+      <div className="absolute bottom-0.5 right-0.5 rotate-180 p-0.5 text-left font-bold sm:bottom-1 sm:right-1 text-base sm:text-lg md:text-xl">
+        {card.rank}
       </div>
 
       <div className="flex h-full w-full items-center justify-center">
-        <div
+        <SuitIcon
           className={cn(
-            "text-2xl font-bold opacity-50 sm:text-4xl",
+            "h-8 w-8 opacity-50 sm:h-12 sm:w-12",
             isKingHere && "opacity-10"
           )}
-        >
-          {card.rank}
-        </div>
+        />
       </div>
 
       {isKingHere && (
