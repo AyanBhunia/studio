@@ -1,0 +1,42 @@
+.gameBoard {
+  position: relative;
+  display: grid;
+  aspect-ratio: 5/7;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.gameContainer {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.gameBoardWrapper {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  min-height: 0;
+}
+
+/* Generate size classes for different grid sizes */
+.grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grid5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.grid6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.grid7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.grid8 { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+
+/* Size classes for card scaling */
+.cardSize20 { max-width: calc(16vh * (5/7)); max-height: 16vh; }
+.cardSize40 { max-width: calc(32vh * (5/7)); max-height: 32vh; }
+.cardSize60 { max-width: calc(48vh * (5/7)); max-height: 48vh; }
+.cardSize80 { max-width: calc(64vh * (5/7)); max-height: 64vh; }
+.cardSize100 { max-width: calc(80vh * (5/7)); max-height: 80vh; }

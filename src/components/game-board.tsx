@@ -4,11 +4,13 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { generateGrid, getPossibleMoves, getCardDistribution } from "@/lib/game";
 import { CardDistribution } from "./card-distribution";
-import type { Grid, Player, PlayerPosition } from "@/lib/types";
+import type { Grid, Player, PlayerPosition, Suit } from "@/lib/types";
 import { PlayingCard } from "./playing-card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import styles from "./game-board.module.css";
+import { type CardCount } from "@/lib/game";
 
 const CPU_MOVE_DELAY = 250;
 
@@ -302,15 +304,10 @@ export function GameBoard({
   }), [gridSize]);
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center">
-      <div className="flex-1 w-full flex items-center justify-center p-2 min-h-0">
+    <div className={styles.gameContainer}>
+      <div className={styles.gameBoardWrapper}>
         <div
-            className="relative grid aspect-[5/7] w-full"
-            style={{
-                ...gridStyle,
-                maxWidth: `calc((${cardSize} / 100) * (80vh * (5/7)))`,
-                maxHeight: `calc((${cardSize} / 100) * 80vh)`
-            }}
+            className={`${styles.gameBoard} ${styles[`grid${gridSize}`]} ${styles[`cardSize${Math.round(cardSize / 20) * 20}`]}`}
         >
             <AnimatePresence>
             {gameState === 'gameOver' && winner && (
